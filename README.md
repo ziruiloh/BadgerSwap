@@ -1,6 +1,6 @@
 # BadgerSwap 🦡
 
-A React Native marketplace app for UW-Madison students to buy and sell items.
+A trusted marketplace app for UW-Madison students to buy and sell items.
 
 ## Features
 
