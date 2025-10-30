@@ -1,0 +1,1 @@
+//helper functions related to firebase
