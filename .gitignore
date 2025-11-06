@@ -43,7 +43,7 @@ app-example
 /android
 
 # Firebase configuration and sensitive files
-firebase/
+# firebase/  # Commented out - needed for the app
 firestoreTest.js
 readSampleData.js
 uploadSampleData.js
