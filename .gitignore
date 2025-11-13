@@ -42,7 +42,11 @@ app-example
 /ios
 /android
 
-
+# Firebase configuration and sensitive files
+# firebase/  # Commented out - needed for the app
+firestoreTest.js
+readSampleData.js
+uploadSampleData.js
 
 
 

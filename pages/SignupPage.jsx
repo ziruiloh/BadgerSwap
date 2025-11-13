@@ -1,9 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import {
-    createUserWithEmailAndPassword,
-    GoogleAuthProvider,
-    signInWithPopup,
-} from "firebase/auth";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -19,9 +14,6 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { auth } from "../firebase/config";
-
-const UW_MADISON_RED = "#C5050C";
 
 export default function SignupPage({ navigation }) {
   const [name, setName] = useState("");
@@ -72,62 +64,32 @@ export default function SignupPage({ navigation }) {
     return true;
   };
 
-  const handleEmailSignup = async () => {
+  const handleEmailSignup = () => {
     if (!validateName(name)) return;
     if (!validateEmail(email)) return;
     if (!validatePassword(password)) return;
     if (!validateConfirmPassword(password, confirmPassword)) return;
 
     setLoading(true);
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
+    // Simulate brief loading, then navigate
+    setTimeout(() => {
+      setLoading(false);
       Alert.alert("Success", "Account created successfully!", [
         {
           text: "OK",
           onPress: () => navigation.replace("HomePage"),
         },
       ]);
-    } catch (error) {
-      Alert.alert(
-        "Signup Failed",
-        error.message || "Failed to create account. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
+    }, 500);
   };
 
-  const handleGoogleSignIn = async () => {
-    // For web platform
-    if (Platform.OS === "web") {
-      try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
-        const user = result.user;
-
-        // Check if email is @wisc.edu
-        if (!user.email || !user.email.endsWith("@wisc.edu")) {
-          await auth.signOut();
-          Alert.alert(
-            "Access Denied",
-            "Only University of Wisconsin-Madison (@wisc.edu) email addresses are allowed to sign in."
-          );
-          return;
-        }
-
-        navigation.replace("HomePage");
-      } catch (error) {
-        if (error.code !== "auth/popup-closed-by-user") {
-          Alert.alert("Google Sign-In Failed", error.message);
-        }
-      }
-    } else {
-      // For mobile platforms, you would use expo-auth-session or similar
-      Alert.alert(
-        "Not Supported",
-        "Google Sign-In is currently only supported on web. Please use email/password signup."
-      );
-    }
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    // Simulate brief loading, then navigate
+    setTimeout(() => {
+      setLoading(false);
+      navigation.replace("HomePage");
+    }, 500);
   };
 
   return (

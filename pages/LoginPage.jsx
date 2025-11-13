@@ -1,11 +1,5 @@
 // pages/LoginPage.jsx
 import { Ionicons } from "@expo/vector-icons";
-import {
-    GoogleAuthProvider,
-    signInWithEmailAndPassword,
-    signInWithPopup,
-    signOut,
-} from "firebase/auth";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -21,9 +15,6 @@ import {
     TouchableOpacity,
     View
 } from "react-native";
-import { auth } from "../firebase/config";
-
-const UW_MADISON_RED = "#C5050C";
 
 export default function LoginPage({ navigation }) {
   const [email, setEmail] = useState("");
@@ -31,51 +22,31 @@ export default function LoginPage({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleEmailLogin = async () => {
-    if (!email) return Alert.alert("Validation Error", "Please enter your email.");
-    if (!password) return Alert.alert("Validation Error", "Please enter your password.");
-
-    setLoading(true);
-    try {
-      const res = await signInWithEmailAndPassword(auth, email.trim(), password);
-      const userEmail = res.user?.email || "";
-      if (!userEmail.toLowerCase().endsWith("@wisc.edu")) {
-        await signOut(auth);
-        Alert.alert("Access Denied", "Please use your Wisc email (@wisc.edu).");
-        return;
-      }
-      navigation.replace("HomePage");
-    } catch (e) {
-      Alert.alert("Login Failed", e?.message ?? "Invalid credentials.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    // Google popup works on web; for mobile we’ll add AuthSession later.
-    if (Platform.OS !== "web") {
-      Alert.alert("Not Supported", "Google Sign-In works on web build right now. Use email/password on mobile.");
+  const handleEmailLogin = () => {
+    if (!email.trim()) {
+      Alert.alert("Validation Error", "Please enter your email.");
       return;
     }
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const userEmail = result.user?.email || "";
-      if (!userEmail.toLowerCase().endsWith("@wisc.edu")) {
-        await signOut(auth);
-        Alert.alert("Access Denied", "Please use your Wisc email (@wisc.edu).");
-        return;
-      }
-      navigation.replace("HomePage");
-    } catch (e) {
-      if (e?.code !== "auth/popup-closed-by-user") {
-        Alert.alert("Google Sign-In Failed", e?.message ?? "Try again.");
-      }
-    } finally {
-      setLoading(false);
+    if (!password.trim()) {
+      Alert.alert("Validation Error", "Please enter your password.");
+      return;
     }
+
+    setLoading(true);
+    // Simulate brief loading, then navigate
+    setTimeout(() => {
+      setLoading(false);
+      navigation.replace("HomePage");
+    }, 500);
+  };
+
+  const handleGoogleSignIn = () => {
+    setLoading(true);
+    // Simulate brief loading, then navigate
+    setTimeout(() => {
+      setLoading(false);
+      navigation.replace("HomePage");
+    }, 500);
   };
 
   return (
