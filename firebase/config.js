@@ -4,12 +4,6 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-<<<<<<< HEAD
-// import data from "./products.json" assert { type: "json" };
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-=======
->>>>>>> shreya
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -23,22 +17,7 @@ const firebaseConfig = {
   measurementId: "G-B0JR1F2KZZ"
 };
 
-<<<<<<< HEAD
-
-=======
->>>>>>> shreya
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-<<<<<<< HEAD
-
-
-// for (const product of data) {
-//   await addDoc(collection(db, "products"), product);
-// }
-
-// console.log("Data uploaded successfully!");
-=======
->>>>>>> shreya

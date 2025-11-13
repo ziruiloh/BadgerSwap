@@ -1,9 +1,5 @@
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { db } from "./config";
-<<<<<<< HEAD
-import { collection, addDoc, getDocs } from "firebase/firestore";
-=======
-import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy } from "firebase/firestore";
->>>>>>> shreya
 
 // Add a product
 export const addProduct = async (product) => {
@@ -17,37 +13,6 @@ export const getProducts = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-<<<<<<< HEAD
-
-// //database CRUD functions (listings, user, chats)
-// users/
-//   userId
-//     name
-//     email
-//     profilePhoto
-//     reputationScore
-//     dateCreated
-// listings/
-//   listingId
-//     title
-//     description
-//     category
-//     price
-//     images[]
-//     sellerId
-//     datePosted
-// messages/
-//   chatId
-//     participants[]
-//     lastMessage
-//     messages[]
-// reports/
-//   reportId
-//     reporterId
-//     targetId (user or listing)
-//     reason
-//     date
-=======
 // Get a single product by ID
 export const getProduct = async (productId) => {
   const docRef = doc(db, "products", productId);
@@ -99,5 +64,3 @@ export const searchProducts = async (searchTerm) => {
     product.description?.toLowerCase().includes(searchLower)
   );
 };
-
->>>>>>> shreya
