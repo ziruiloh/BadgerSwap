@@ -1,19 +1,19 @@
 // pages/LoginPage.jsx
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 export default function LoginPage({ navigation }) {
@@ -36,7 +36,8 @@ export default function LoginPage({ navigation }) {
     // Simulate brief loading, then navigate
     setTimeout(() => {
       setLoading(false);
-      navigation.replace("HomePage");
+      // Use the registered root stack screen name for the main app
+      navigation.replace("MainApp");
     }, 500);
   };
 
@@ -45,7 +46,7 @@ export default function LoginPage({ navigation }) {
     // Simulate brief loading, then navigate
     setTimeout(() => {
       setLoading(false);
-      navigation.replace("HomePage");
+      navigation.replace("MainApp");
     }, 500);
   };
 

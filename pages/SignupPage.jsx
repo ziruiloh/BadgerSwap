@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -77,7 +77,7 @@ export default function SignupPage({ navigation }) {
       Alert.alert("Success", "Account created successfully!", [
         {
           text: "OK",
-          onPress: () => navigation.replace("HomePage"),
+          onPress: () => navigation.replace("MainApp"),
         },
       ]);
     }, 500);
@@ -88,7 +88,7 @@ export default function SignupPage({ navigation }) {
     // Simulate brief loading, then navigate
     setTimeout(() => {
       setLoading(false);
-      navigation.replace("HomePage");
+      navigation.replace("MainApp");
     }, 500);
   };
 
