@@ -1,9 +1,13 @@
 // App.js
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { NavigationContainer } from "@react-navigation/native";
-import { createStackNavigator } from "@react-navigation/stack";
+// Root application entry: sets up a stack navigator with an embedded bottom tab navigator.
+// We always register both auth screens (Login/Signup) and the main app container (MainApp)
+// so that navigation.replace('MainApp') is valid regardless of auth state. The initial route
+// is chosen dynamically based on whether there's an authenticated Firebase user.
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"; // bottom tab navigator (Home / Chat / Favorites / Profile)
+import { NavigationContainer } from "@react-navigation/native"; // navigation context container
+import { createStackNavigator } from "@react-navigation/stack"; // root stack (auth screens + MainApp)
 import { useEffect, useState } from "react";
-import { Heart, Home, MessageCircle, User } from "react-native-feather";
+import { Heart, Home, MessageCircle, User } from "react-native-feather"; // simple feather icons for tab bar
 
 import { auth } from "./firebase/config";
 import ChatPage from "./pages/ChatPage";
@@ -18,6 +22,8 @@ import SignupPage from "./pages/SignupPage";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// HomeTabs renders the bottom tab navigator used after authentication.
+// Each Tab.Screen hides the header and uses a consistent icon style.
 function HomeTabs() {
   return (
     <Tab.Navigator
@@ -51,6 +57,7 @@ function HomeTabs() {
         },
       })}
     >
+      {/* Home (product listings grid) */}
       <Tab.Screen
         name="Home"
         component={ProductListPage}
@@ -63,6 +70,7 @@ function HomeTabs() {
           },
         })}
       />
+      {/* Chat (placeholder local message list) */}
       <Tab.Screen
         name="Chat"
         options={{ title: "Chat" }}
@@ -74,6 +82,7 @@ function HomeTabs() {
       >
         {() => <ChatPage />}
       </Tab.Screen>
+      {/* Favorites (placeholder favorites page) */}
       <Tab.Screen
         name="Favorites"
         options={{ title: "Favorites" }}
@@ -85,6 +94,7 @@ function HomeTabs() {
       >
         {() => <FavouritesPage />}
       </Tab.Screen>
+      {/* Profile (user info / reputation) */}
       <Tab.Screen
         name="Profile"
         options={{ title: "Profile" }}
@@ -104,6 +114,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Listen for Firebase auth state changes to decide initial route
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
@@ -113,7 +124,8 @@ export default function App() {
   }, []);
 
   if (loading) {
-    return null; // or a splash screen
+    // Could render a splash/loading indicator here.
+    return null; // Keep minimal for now.
   }
 
   return (
@@ -125,12 +137,15 @@ export default function App() {
         {/* Always register both auth and main screens so navigation actions from auth screens
             (like navigation.replace('MainApp')) are handled. We control the start route via
             initialRouteName which uses the current `user` value. */}
-        <Stack.Screen name="MainApp" component={HomeTabs} />
-        <Stack.Screen name="ListingDetails" component={ListingDetails} />
-        <Stack.Screen name="PostListing" component={PostListing} />
+  {/* Main authenticated container (tab navigator) */}
+  <Stack.Screen name="MainApp" component={HomeTabs} />
+  {/* Detail + creation flows layered on top of tabs */}
+  <Stack.Screen name="ListingDetails" component={ListingDetails} />
+  <Stack.Screen name="PostListing" component={PostListing} />
 
-        <Stack.Screen name="LoginPage" component={LoginPage} />
-        <Stack.Screen name="SignupPage" component={SignupPage} />
+  {/* Auth screens (shown if user is null) */}
+  <Stack.Screen name="LoginPage" component={LoginPage} />
+  <Stack.Screen name="SignupPage" component={SignupPage} />
       </Stack.Navigator>
     </NavigationContainer>
   );

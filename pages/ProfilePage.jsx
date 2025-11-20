@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import { auth } from '../firebase/config';
 
+// ProfilePage: Displays current user info, reputation, join date, and basic action buttons.
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Get current user info
+    // Populate local state from Firebase auth user (simplified; real app may fetch extended profile).
     if (auth.currentUser) {
       setUser({
         name: auth.currentUser.displayName || 'User',
@@ -30,6 +31,7 @@ export default function ProfilePage() {
     }
   }, []);
 
+  // Sign out user from Firebase auth.
   const handleLogout = async () => {
     try {
       await signOut(auth);

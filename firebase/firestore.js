@@ -1,19 +1,21 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { db } from "./config";
+// Firestore data access layer: thin wrappers around common listing operations.
+// Each function returns plain JS objects with an added `id` for convenience.
 
-// Add a product
+// Add a product document to 'products'. Returns new document ID.
 export const addProduct = async (product) => {
   const docRef = await addDoc(collection(db, "products"), product);
   return docRef.id;
 };
 
-// Get all products
+// Get all products (no filtering). For larger datasets consider pagination or query constraints.
 export const getProducts = async () => {
   const snapshot = await getDocs(collection(db, "products"));
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Get a single product by ID
+// Get a single product by ID. Throws if not found.
 export const getProduct = async (productId) => {
   const docRef = doc(db, "products", productId);
   const docSnap = await getDoc(docRef);
@@ -25,33 +27,33 @@ export const getProduct = async (productId) => {
   }
 };
 
-// Update a product
+// Partially update product fields.
 export const updateProduct = async (productId, updates) => {
   const docRef = doc(db, "products", productId);
   await updateDoc(docRef, updates);
 };
 
-// Delete a product
+// Delete a product document by ID.
 export const deleteProduct = async (productId) => {
   const docRef = doc(db, "products", productId);
   await deleteDoc(docRef);
 };
 
-// Get products by category
+// Query products matching a specific category.
 export const getProductsByCategory = async (category) => {
   const q = query(collection(db, "products"), where("category", "==", category));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Get products by seller
+// Query products created by a specific seller.
 export const getProductsBySeller = async (sellerId) => {
   const q = query(collection(db, "products"), where("sellerId", "==", sellerId));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Search products by title
+// Naive client-side search: Firestore lacks native full-text search.
 export const searchProducts = async (searchTerm) => {
   const snapshot = await getDocs(collection(db, "products"));
   const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));

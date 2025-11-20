@@ -9,6 +9,7 @@ import {
     View,
 } from 'react-native';
 
+// ChatPage: Minimal local chat UI (in-memory messages). Placeholder for real backend chat integration.
 export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -19,6 +20,7 @@ export default function ChatPage() {
     return () => console.log('ChatPage unmounted');
   }, []);
 
+  // Append a new message from the user to local state.
   const handleSend = () => {
     if (input.trim()) {
       setMessages([...messages, { id: Date.now(), text: input, sender: 'user' }]);
@@ -26,7 +28,7 @@ export default function ChatPage() {
     }
   };
 
-  // defensive render: catch sync render errors and show a helpful message
+  // Defensive render: catch synchronous errors to avoid blank screens during early UI development.
   try {
     if (renderError) {
       return (

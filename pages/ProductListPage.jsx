@@ -1,3 +1,5 @@
+// ProductListPage: Displays a searchable & filterable grid of products.
+// Fetches data once on mount via Firestore wrapper, then filters client-side.
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -22,6 +24,7 @@ export default function ProductListPage({ navigation }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
+  // Fetch products on mount. Uses a mounted flag to avoid state updates after unmount.
   useEffect(() => {
     let mounted = true;
     const fetchProducts = async () => {
@@ -39,11 +42,13 @@ export default function ProductListPage({ navigation }) {
     return () => (mounted = false);
   }, []);
 
+  // Derive unique category list from products (prefix with 'All').
   const categoriesList = useMemo(() => {
     const cats = products.map((p) => p.category).filter(Boolean);
     return ["All", ...Array.from(new Set(cats))];
   }, [products]);
 
+  // Heuristic price formatter: handles numbers that may represent cents (large int) or dollars.
   function formatPrice(p) {
     if (p == null) return "—";
     // price may be stored in cents or as a number
@@ -60,6 +65,7 @@ export default function ProductListPage({ navigation }) {
     return String(p);
   }
 
+  // Filter products by selectedCategory & searchQuery.
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       if (selectedCategory && selectedCategory !== "All" && p.category !== selectedCategory) return false;
@@ -72,6 +78,7 @@ export default function ProductListPage({ navigation }) {
     });
   }, [products, selectedCategory, searchQuery]);
 
+  // Render a product card (two-column layout). Navigates to ListingDetails when tapped.
   const renderProductCard = ({ item }) => (
     <TouchableOpacity
       style={styles.productCard}
@@ -112,9 +119,10 @@ export default function ProductListPage({ navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
-      <View style={styles.header}>
+  <View style={styles.header}>
         <Text style={styles.headerTitle}>BadgerSwap</Text>
-        <View style={styles.searchRow}>
+  {/* Search input + filter icon opens modal category picker */}
+  <View style={styles.searchRow}>
           <Ionicons name="search-outline" size={18} color="#666" style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
@@ -128,7 +136,8 @@ export default function ProductListPage({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.categoryRowTop}>
+  {/* Quick category chips (limited subset) for fast filtering */}
+  <View style={styles.categoryRowTop}>
           <TouchableOpacity
             style={[styles.categoryChip, !selectedCategory || selectedCategory === 'All' ? styles.categoryChipActive : null]}
             onPress={() => setSelectedCategory(null)}
@@ -143,7 +152,7 @@ export default function ProductListPage({ navigation }) {
         </View>
       </View>
 
-      <View style={styles.contentContainer}>
+  <View style={styles.contentContainer}>
         {loading ? (
           <View style={styles.loadingContainer}>
             <Text style={styles.loadingText}>Loading products...</Text>
@@ -165,11 +174,13 @@ export default function ProductListPage({ navigation }) {
         )}
       </View>
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('PostListing')}>
+  {/* FAB for creating a new listing */}
+  <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('PostListing')}>
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
 
-      <Modal visible={showCategoryPicker} transparent animationType="fade">
+  {/* Modal for selecting any category, beyond quick chips */}
+  <Modal visible={showCategoryPicker} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={() => setShowCategoryPicker(false)}>
           <View style={styles.modalOverlay} />
         </TouchableWithoutFeedback>

@@ -4,6 +4,7 @@ import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TextInpu
 import { auth } from '../firebase/config';
 import { addProduct } from '../firebase/firestore';
 
+// PostListing: Form for creating a new product listing and persisting to Firestore.
 export default function PostListing({ navigation }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -15,6 +16,7 @@ export default function PostListing({ navigation }) {
 
   const categories = ['Textbooks', 'Clothing', 'Electronics', 'Furniture', 'Other'];
 
+  // Validate minimal required fields, compose product object & persist via addProduct.
   const handleSubmit = async () => {
     if (!title.trim()) return alert('Please enter a title');
     if (!price.trim()) return alert('Please enter a price');
@@ -34,10 +36,10 @@ export default function PostListing({ navigation }) {
         createdAt: new Date().toISOString(),
       };
 
-      const id = await addProduct(product);
+  const id = await addProduct(product); // Firestore document ID returned
       setLoading(false);
       // navigate to listing details of the newly created product
-      navigation.replace('ListingDetails', { product: { ...product, id } });
+  navigation.replace('ListingDetails', { product: { ...product, id } }); // show newly created listing
     } catch (err) {
       setLoading(false);
       console.error('Failed to post listing', err);

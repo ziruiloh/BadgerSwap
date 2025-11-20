@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+// Resolve a usable image URL from common product field variations.
 function resolveImage(product) {
-  // common field names: image, imageUrl, images (array)
   if (!product) return null;
-  if (product.image) return product.image;
-  if (product.imageUrl) return product.imageUrl;
-  if (product.images && Array.isArray(product.images) && product.images.length > 0) return product.images[0];
+  if (product.image) return product.image;           // single image field
+  if (product.imageUrl) return product.imageUrl;     // alternative naming
+  if (product.images && Array.isArray(product.images) && product.images.length > 0) return product.images[0]; // first in images array
   return null;
 }
 
+// Attempt to resolve seller display name from possible fields.
 function resolveSellerName(product) {
   return product?.sellerName || product?.seller || product?.sellerId || 'Unknown';
 }
@@ -20,6 +21,7 @@ export default function ListingDetails({ route, navigation }) {
   const imageUri = resolveImage(product) || 'https://via.placeholder.com/800x450?text=No+Image';
   const sellerName = resolveSellerName(product);
 
+  // Format price supporting either raw dollars or cent-based integers.
   function formatPrice(p) {
     if (p == null) return '—';
     // support priceCents or price as number/string
