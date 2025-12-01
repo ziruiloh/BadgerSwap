@@ -2,48 +2,104 @@ import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { auth } from '../firebase/config';
+import { getCurrentUserProfile } from '../services/userService';
 
 // ProfilePage: Displays current user info, reputation, join date, and basic action buttons.
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    // Populate local state from Firebase auth user (simplified; real app may fetch extended profile).
-    if (auth.currentUser) {
-      setUser({
-        name: auth.currentUser.displayName || 'User',
-        email: auth.currentUser.email,
-        photo: auth.currentUser.photoURL || 'https://via.placeholder.com/150',
-        reputation: 4.8,
-        joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
-        bio: 'Passionate trader and community member',
-      });
-    }
+    loadUserProfile();
   }, []);
 
-  // Sign out user from Firebase auth.
-  const handleLogout = async () => {
+  const loadUserProfile = async () => {
     try {
-      await signOut(auth);
+      if (auth.currentUser) {
+        // Fetch user profile from Firestore
+        const userProfile = await getCurrentUserProfile();
+        
+        setUser({
+          name: userProfile.name || auth.currentUser.displayName || 'Badger User',
+          email: userProfile.email || auth.currentUser.email,
+          photo: userProfile.avatarUrl || auth.currentUser.photoURL || 'https://via.placeholder.com/150',
+          reputation: userProfile.reputation || 5.0,
+          joinDate: userProfile.createdAt 
+            ? new Date(userProfile.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : auth.currentUser.metadata?.creationTime 
+              ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+              : 'Recently',
+          bio: userProfile.bio || 'Badger at UW-Madison',
+        });
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to logout');
+      console.error('Error loading user profile:', error);
+      // Fallback to Firebase Auth data if Firestore fetch fails
+      if (auth.currentUser) {
+        setUser({
+          name: auth.currentUser.displayName || 'Badger User',
+          email: auth.currentUser.email,
+          photo: auth.currentUser.photoURL || 'https://via.placeholder.com/150',
+          reputation: 5.0,
+          joinDate: auth.currentUser.metadata?.creationTime 
+            ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : 'Recently',
+          bio: 'Badger at UW-Madison',
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!user) {
+  // Sign out user from Firebase auth with confirmation.
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            setLoggingOut(true);
+            try {
+              await signOut(auth);
+              // App.js auth listener will automatically navigate to LoginPage
+              console.log('User logged out successfully');
+            } catch (error) {
+              console.error('Logout error:', error);
+              setLoggingOut(false);
+              Alert.alert('Logout Failed', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  if (loading || !user) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text>Loading...</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -100,8 +156,14 @@ export default function ProfilePage() {
             <Text style={styles.actionButtonText}>Settings</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
-            <Text style={[styles.actionButtonText, styles.logoutText]}>Logout</Text>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.logoutButton, loggingOut && styles.actionButtonDisabled]} 
+            onPress={handleLogout}
+            disabled={loggingOut}
+          >
+            <Text style={[styles.actionButtonText, styles.logoutText]}>
+              {loggingOut ? 'Logging out...' : 'Logout'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -113,6 +175,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
   },
   scrollContent: {
     paddingBottom: 24,
@@ -195,11 +266,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
   logoutButton: {
     backgroundColor: '#f5f5f5',
     borderColor: '#FF3B30',
   },
   logoutText: {
     color: '#FF3B30',
+  },
+  reputationStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

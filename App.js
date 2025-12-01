@@ -131,21 +131,22 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? "MainApp" : "LoginPage"}
         screenOptions={{ headerShown: false, cardStyle: { backgroundColor: "#FFFFFF" } }}
       >
-        {/* Always register both auth and main screens so navigation actions from auth screens
-            (like navigation.replace('MainApp')) are handled. We control the start route via
-            initialRouteName which uses the current `user` value. */}
-  {/* Main authenticated container (tab navigator) */}
-  <Stack.Screen name="MainApp" component={HomeTabs} />
-  {/* Detail + creation flows layered on top of tabs */}
-  <Stack.Screen name="ListingDetails" component={ListingDetails} />
-  <Stack.Screen name="PostListing" component={PostListing} />
-
-  {/* Auth screens (shown if user is null) */}
-  <Stack.Screen name="LoginPage" component={LoginPage} />
-  <Stack.Screen name="SignupPage" component={SignupPage} />
+        {user ? (
+          // Authenticated screens
+          <>
+            <Stack.Screen name="MainApp" component={HomeTabs} />
+            <Stack.Screen name="ListingDetails" component={ListingDetails} />
+            <Stack.Screen name="PostListing" component={PostListing} />
+          </>
+        ) : (
+          // Auth screens (shown when logged out)
+          <>
+            <Stack.Screen name="LoginPage" component={LoginPage} />
+            <Stack.Screen name="SignupPage" component={SignupPage} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

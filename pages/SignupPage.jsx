@@ -14,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { signUp } from "../firebase/auth";
+import { updateUser } from "../firebase/firestore";
 
 export default function SignupPage({ navigation }) {
   const [name, setName] = useState("");
@@ -37,8 +39,9 @@ export default function SignupPage({ navigation }) {
       Alert.alert("Validation Error", "Please enter your email address.");
       return false;
     }
-    if (!email.includes("@")) {
-      Alert.alert("Validation Error", "Please enter a valid email address.");
+    
+    if (!email.endsWith("@wisc.edu")) {
+      Alert.alert("Validation Error", "Please use a UW-Madison email address (@wisc.edu).");
       return false;
     }
     return true;
@@ -64,23 +67,46 @@ export default function SignupPage({ navigation }) {
     return true;
   };
 
-  const handleEmailSignup = () => {
+  const handleEmailSignup = async () => {
     if (!validateName(name)) return;
     if (!validateEmail(email)) return;
     if (!validatePassword(password)) return;
     if (!validateConfirmPassword(password, confirmPassword)) return;
 
     setLoading(true);
-    // Simulate brief loading, then navigate
-    setTimeout(() => {
+    try {
+      // Sign up with Firebase Auth and create user document in Firestore
+      const userCredential = await signUp(email, password);
+      
+      // Update the user document with the name
+      if (name.trim()) {
+        await updateUser(userCredential.user.uid, {
+          name: name.trim(),
+        });
+      }
+      
       setLoading(false);
-      Alert.alert("Success", "Account created successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.replace("MainApp"),
-        },
-      ]);
-    }, 500);
+      Alert.alert("Success", "Account created successfully!");
+      // Navigation happens automatically via conditional rendering in App.js
+      // when auth state changes
+    } catch (error) {
+      setLoading(false);
+      console.error("Signup error:", error);
+      
+      // Handle specific Firebase error codes
+      let errorMessage = "An error occurred during signup. Please try again.";
+      if (error.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered. Please log in instead.";
+      } else if (error.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address.";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "Password is too weak. Please use at least 6 characters.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert("Signup Failed", errorMessage);
+    }
   };
 
   const handleGoogleSignIn = () => {
