@@ -1,24 +1,35 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { serverTimestamp } from 'firebase/firestore';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { auth } from '../firebase/config';
 import { addProduct, getUser } from '../firebase/firestore';
 import { uploadMultipleImages } from '../firebase/storage';
-import { serverTimestamp } from 'firebase/firestore';
 
 // PostListing: Form for creating a new product listing and persisting to Firestore.
 export default function PostListing({ navigation }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('Textbooks');
+  const [category, setCategory] = useState('Furniture');
   const [location, setLocation] = useState('');
   const [selectedImages, setSelectedImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const categories = ['Textbooks', 'Clothing', 'Electronics', 'Furniture', 'Other'];
+  const categories = [
+    'Furniture',
+    'Clothing',
+    'Transportation',
+    'School Supplies',
+    'Textbooks',
+    'Electronics',
+    'Other',
+    'Appliances',
+    'Sports',
+    'Accessories'
+  ];
   const MAX_IMAGES = 5;
 
   const pickImageFromGallery = async () => {
@@ -163,6 +174,15 @@ export default function PostListing({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
+      
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Post a Listing</Text>
+      </View>
+
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -173,12 +193,6 @@ export default function PostListing({ navigation }) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Post a Listing</Text>
-        </View>
 
         <View style={styles.form}>
           <Text style={styles.label}>Photos ({selectedImages.length}/{MAX_IMAGES})</Text>
@@ -261,9 +275,9 @@ export default function PostListing({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backButton: { padding: 6, marginRight: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  backButton: { padding: 4 },
+  headerTitle: { fontSize: 18, fontWeight: '700', marginLeft: 12 },
   content: { padding: 16 },
   form: { marginTop: 8 },
   label: { fontSize: 14, color: '#333', marginBottom: 6, marginTop: 12, fontWeight: '500' },
