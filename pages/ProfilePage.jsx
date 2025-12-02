@@ -152,9 +152,9 @@ export default function ProfilePage() {
             <Text style={styles.actionButtonText}>My Listings</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          {/* <TouchableOpacity style={styles.actionButton}>
             <Text style={styles.actionButtonText}>Settings</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <TouchableOpacity 
             style={[styles.actionButton, styles.logoutButton, loggingOut && styles.actionButtonDisabled]} 
@@ -162,7 +162,7 @@ export default function ProfilePage() {
             disabled={loggingOut}
           >
             <Text style={[styles.actionButtonText, styles.logoutText]}>
-              {loggingOut ? 'Logging out...' : 'Logout'}
+              Log Out
             </Text>
           </TouchableOpacity>
         </View>
