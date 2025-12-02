@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import { db } from "./config";
 // Firestore data access layer: thin wrappers around common listing operations.
 // Each function returns plain JS objects with an added `id` for convenience.
@@ -65,4 +65,119 @@ export const searchProducts = async (searchTerm) => {
     product.title?.toLowerCase().includes(searchLower) ||
     product.description?.toLowerCase().includes(searchLower)
   );
+};
+
+// ==================== USER CRUD OPERATIONS ====================
+
+// CREATE - Add a new user document (typically called during signup)
+export const createUser = async (userId, userData) => {
+  const docRef = doc(db, "users", userId);
+  await setDoc(docRef, userData);
+  return userId;
+};
+
+// READ - Get a single user by ID
+export const getUser = async (userId) => {
+  const docRef = doc(db, "users", userId);
+  const docSnap = await getDoc(docRef);
+  
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() };
+  } else {
+    throw new Error("User not found");
+  }
+};
+
+// READ - Get all users (admin functionality)
+export const getAllUsers = async () => {
+  const snapshot = await getDocs(collection(db, "users"));
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+// UPDATE - Partially update user fields
+export const updateUser = async (userId, updates) => {
+  const docRef = doc(db, "users", userId);
+  await updateDoc(docRef, updates);
+};
+
+// DELETE - Delete a user document from Firestore
+export const deleteUser = async (userId) => {
+  const docRef = doc(db, "users", userId);
+  await deleteDoc(docRef);
+};
+
+// ==================== FAVORITES OPERATIONS ====================
+
+// Add to favorites
+export const addToFavorites = async (userId, productId) => {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+  
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    const favorites = userData.favorites || [];
+    
+    if (!favorites.includes(productId)) {
+      await updateDoc(userRef, {
+        favorites: [...favorites, productId]
+      });
+    }
+  } else {
+    // Create user document if it doesn't exist
+    await setDoc(userRef, {
+      favorites: [productId]
+    }, { merge: true });
+  }
+};
+
+// Remove from favorites
+export const removeFromFavorites = async (userId, productId) => {
+  const userRef = doc(db, "users", userId);
+  const userSnap = await getDoc(userRef);
+  
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    const favorites = userData.favorites || [];
+    
+    await updateDoc(userRef, {
+      favorites: favorites.filter(id => id !== productId)
+    });
+  }
+  // If user doesn't exist, nothing to remove
+};
+
+// Get user favorites
+export const getUserFavorites = async (userId) => {
+  const user = await getUser(userId);
+  const favorites = user.favorites || [];
+  
+  if (favorites.length === 0) return [];
+  
+  const products = await Promise.all(
+    favorites.map(id => getProduct(id).catch(() => null))
+  );
+  
+  return products.filter(p => p !== null);
+};
+
+// Check if product is favorited
+export const isFavorited = async (userId, productId) => {
+  try {
+    const user = await getUser(userId);
+    return (user.favorites || []).includes(productId);
+  } catch {
+    return false;
+  }
+};
+
+// ==================== REPORT OPERATIONS ====================
+
+// Create a report
+export const createReport = async (reportData) => {
+  const docRef = await addDoc(collection(db, "reports"), {
+    ...reportData,
+    createdAt: serverTimestamp(),
+    date: serverTimestamp(),
+  });
+  return docRef.id;
 };

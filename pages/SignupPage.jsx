@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { signUp } from "../firebase/auth";
 
 export default function SignupPage({ navigation }) {
   const [name, setName] = useState("");
@@ -64,33 +65,44 @@ export default function SignupPage({ navigation }) {
     return true;
   };
 
-  const handleEmailSignup = () => {
+  const handleEmailSignup = async () => {
     if (!validateName(name)) return;
     if (!validateEmail(email)) return;
     if (!validatePassword(password)) return;
     if (!validateConfirmPassword(password, confirmPassword)) return;
 
+    if (!email.toLowerCase().endsWith("@wisc.edu")) {
+      Alert.alert("Error", "Only UW–Madison @wisc.edu emails are allowed.");
+      return;
+    }
+
     setLoading(true);
-    // Simulate brief loading, then navigate
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      await signUp(email.trim(), password.trim(), name.trim());
       Alert.alert("Success", "Account created successfully!", [
         {
           text: "OK",
           onPress: () => navigation.replace("MainApp"),
         },
       ]);
-    }, 500);
+    } catch (err) {
+      let errorMessage = "Failed to create account. Please try again.";
+      
+      if (err.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered. Please log in instead.";
+      } else if (err.code === "auth/weak-password") {
+        errorMessage = "Password is too weak. Please choose a stronger password.";
+      } else if (err.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address. Please check your email.";
+      }
+      
+      Alert.alert("Signup Error", errorMessage);
+    }
+
+    setLoading(false);
   };
 
-  const handleGoogleSignIn = () => {
-    setLoading(true);
-    // Simulate brief loading, then navigate
-    setTimeout(() => {
-      setLoading(false);
-      navigation.replace("MainApp");
-    }, 500);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -228,22 +240,6 @@ export default function SignupPage({ navigation }) {
             )}
           </TouchableOpacity>
 
-          {/* Divider */}
-          <View style={styles.dividerContainer}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Google Sign In Button */}
-            <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleSignIn}
-            disabled={loading}
-          >
-            <Ionicons name="checkbox" size={20} color="#000" />
-            <Text style={styles.googleButtonText}>Continue with Google (UW)</Text>
-          </TouchableOpacity>
 
           {/* Sign In Link */}
           <View style={styles.signinContainer}>

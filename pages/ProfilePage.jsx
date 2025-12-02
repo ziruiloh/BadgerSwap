@@ -2,34 +2,59 @@ import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { auth } from '../firebase/config';
+import { getUser } from '../firebase/firestore';
 
 // ProfilePage: Displays current user info, reputation, join date, and basic action buttons.
-export default function ProfilePage() {
+export default function ProfilePage({ navigation }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Populate local state from Firebase auth user (simplified; real app may fetch extended profile).
-    if (auth.currentUser) {
-      setUser({
-        name: auth.currentUser.displayName || 'User',
-        email: auth.currentUser.email,
-        photo: auth.currentUser.photoURL || 'https://via.placeholder.com/150',
-        reputation: 4.8,
-        joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
-        bio: 'Passionate trader and community member',
-      });
-    }
+    loadUserProfile();
   }, []);
+
+  // Refresh profile when screen comes into focus (e.g., after editing)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadUserProfile();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const loadUserProfile = async () => {
+    if (auth.currentUser) {
+      try {
+        const userData = await getUser(auth.currentUser.uid);
+        setUser({
+          name: userData.name || auth.currentUser.displayName || 'User',
+          email: auth.currentUser.email,
+          photo: userData.profileImage || userData.photoURL || auth.currentUser.photoURL || 'https://via.placeholder.com/150',
+          reputation: userData.reputation || 4.8,
+          joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
+          bio: userData.bio || '',
+        });
+      } catch (error) {
+        // If user document doesn't exist, use auth user data
+        setUser({
+          name: auth.currentUser.displayName || 'User',
+          email: auth.currentUser.email,
+          photo: auth.currentUser.photoURL || 'https://via.placeholder.com/150',
+          reputation: 4.8,
+          joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
+          bio: '',
+        });
+      }
+    }
+  };
 
   // Sign out user from Firebase auth.
   const handleLogout = async () => {
@@ -60,7 +85,11 @@ export default function ProfilePage() {
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{user.name}</Text>
             <Text style={styles.email}>{user.email}</Text>
-            <Text style={styles.bio}>{user.bio}</Text>
+            {user.bio ? (
+              <Text style={styles.bio}>{user.bio}</Text>
+            ) : (
+              <Text style={styles.bioPlaceholder}>No bio yet. Tap "Edit Profile" to add one.</Text>
+            )}
 
             <View style={styles.statsContainer}>
               <View style={styles.stat}>
@@ -88,16 +117,18 @@ export default function ProfilePage() {
         </View>
 
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('MyListingsPage')}
+          >
             <Text style={styles.actionButtonText}>My Listings</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionButtonText}>Settings</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
@@ -152,6 +183,13 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     marginBottom: 16,
+  },
+  bioPlaceholder: {
+    fontSize: 14,
+    color: '#ccc',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
   },
   statsContainer: {
     flexDirection: 'row',

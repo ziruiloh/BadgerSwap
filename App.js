@@ -1,52 +1,50 @@
-// App.js
-// Root application entry: sets up a stack navigator with an embedded bottom tab navigator.
-// We always register both auth screens (Login/Signup) and the main app container (MainApp)
-// so that navigation.replace('MainApp') is valid regardless of auth state. The initial route
-// is chosen dynamically based on whether there's an authenticated Firebase user.
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"; // bottom tab navigator (Home / Chat / Favorites / Profile)
-import { NavigationContainer } from "@react-navigation/native"; // navigation context container
-import { createStackNavigator } from "@react-navigation/stack"; // root stack (auth screens + MainApp)
+import { Ionicons } from "@expo/vector-icons";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
 import { useEffect, useState } from "react";
-import { Heart, Home, MessageCircle, User } from "react-native-feather"; // simple feather icons for tab bar
 
 import { auth } from "./firebase/config";
 import ChatPage from "./pages/ChatPage";
+import EditListing from "./pages/EditListing";
+import EditProfile from "./pages/EditProfile";
 import FavouritesPage from "./pages/FavouritesPage";
-import ListingDetails from './pages/ListingDetails';
+import ListingDetails from "./pages/ListingDetails";
 import LoginPage from "./pages/LoginPage";
-import PostListing from './pages/PostListing';
+import MyListingsPage from "./pages/MyListingsPage";
+import PostListing from "./pages/PostListing";
 import ProductListPage from "./pages/ProductListPage";
 import ProfilePage from "./pages/ProfilePage";
+import ReportPage from "./pages/ReportPage";
 import SignupPage from "./pages/SignupPage";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// HomeTabs renders the bottom tab navigator used after authentication.
-// Each Tab.Screen hides the header and uses a consistent icon style.
+// HomeTabs renders the bottom tab navigator used after authentication
 function HomeTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: true,
-        
         tabBarIcon: ({ focused, color, size }) => {
-          let Icon;
+          let iconName;
+
           if (route.name === "Home") {
-            Icon = Home;
+            iconName = focused ? "home" : "home-outline";
           } else if (route.name === "Chat") {
-            Icon = MessageCircle;
+            iconName = focused ? "chatbubble" : "chatbubble-outline";
           } else if (route.name === "Favorites") {
-            Icon = Heart;
+            iconName = focused ? "heart" : "heart-outline";
           } else if (route.name === "Profile") {
-            Icon = User;
+            iconName = focused ? "person" : "person-outline";
           }
-          return Icon ? <Icon width={size || 24} height={size || 24} color={color} strokeWidth={2} /> : null;
+
+          return <Ionicons name={iconName} size={size || 24} color={color} />;
         },
-  // keep icon color consistent (no color change on active)
-  tabBarActiveTintColor: "#000000",
-  tabBarInactiveTintColor: "#000000",
+        tabBarActiveTintColor: "#000000",
+        tabBarInactiveTintColor: "#666666",
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
@@ -57,55 +55,10 @@ function HomeTabs() {
         },
       })}
     >
-      {/* Home (product listings grid) */}
-      <Tab.Screen
-        name="Home"
-        component={ProductListPage}
-        options={{
-          title: "Home",
-        }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            console.log('tabPress:', route.name);
-          },
-        })}
-      />
-      {/* Chat (placeholder local message list) */}
-      <Tab.Screen
-        name="Chat"
-        options={{ title: "Chat" }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            console.log('tabPress:', route.name);
-          },
-        })}
-      >
-        {() => <ChatPage />}
-      </Tab.Screen>
-      {/* Favorites (placeholder favorites page) */}
-      <Tab.Screen
-        name="Favorites"
-        options={{ title: "Favorites" }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            console.log('tabPress:', route.name);
-          },
-        })}
-      >
-        {() => <FavouritesPage />}
-      </Tab.Screen>
-      {/* Profile (user info / reputation) */}
-      <Tab.Screen
-        name="Profile"
-        options={{ title: "Profile" }}
-        listeners={({ navigation, route }) => ({
-          tabPress: (e) => {
-            console.log('tabPress:', route.name);
-          },
-        })}
-      >
-        {() => <ProfilePage />}
-      </Tab.Screen>
+      <Tab.Screen name="Home" component={ProductListPage} />
+      <Tab.Screen name="Chat" component={ChatPage} />
+      <Tab.Screen name="Favorites" component={FavouritesPage} />
+      <Tab.Screen name="Profile" component={ProfilePage} />
     </Tab.Navigator>
   );
 }
@@ -114,7 +67,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for Firebase auth state changes to decide initial route
+  // Listen for Firebase auth state changes
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       setUser(currentUser);
@@ -124,8 +77,7 @@ export default function App() {
   }, []);
 
   if (loading) {
-    // Could render a splash/loading indicator here.
-    return null; // Keep minimal for now.
+    return null; // Could add a splash screen here
   }
 
   return (
@@ -134,18 +86,20 @@ export default function App() {
         initialRouteName={user ? "MainApp" : "LoginPage"}
         screenOptions={{ headerShown: false, cardStyle: { backgroundColor: "#FFFFFF" } }}
       >
-        {/* Always register both auth and main screens so navigation actions from auth screens
-            (like navigation.replace('MainApp')) are handled. We control the start route via
-            initialRouteName which uses the current `user` value. */}
-  {/* Main authenticated container (tab navigator) */}
-  <Stack.Screen name="MainApp" component={HomeTabs} />
-  {/* Detail + creation flows layered on top of tabs */}
-  <Stack.Screen name="ListingDetails" component={ListingDetails} />
-  <Stack.Screen name="PostListing" component={PostListing} />
+        {/* Auth screens */}
+        <Stack.Screen name="LoginPage" component={LoginPage} />
+        <Stack.Screen name="SignupPage" component={SignupPage} />
 
-  {/* Auth screens (shown if user is null) */}
-  <Stack.Screen name="LoginPage" component={LoginPage} />
-  <Stack.Screen name="SignupPage" component={SignupPage} />
+        {/* Main authenticated container (tab navigator) */}
+        <Stack.Screen name="MainApp" component={HomeTabs} />
+
+        {/* Detail + creation flows layered on top of tabs */}
+        <Stack.Screen name="ListingDetails" component={ListingDetails} />
+        <Stack.Screen name="PostListing" component={PostListing} />
+        <Stack.Screen name="EditListing" component={EditListing} />
+        <Stack.Screen name="ReportPage" component={ReportPage} />
+        <Stack.Screen name="MyListingsPage" component={MyListingsPage} />
+        <Stack.Screen name="EditProfile" component={EditProfile} />
       </Stack.Navigator>
     </NavigationContainer>
   );

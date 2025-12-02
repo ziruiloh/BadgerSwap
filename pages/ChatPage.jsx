@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // ChatPage: Minimal local chat UI (in-memory messages). Placeholder for real backend chat integration.
-export default function ChatPage() {
+export default function ChatPage({ route }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [renderError, setRenderError] = useState(null);

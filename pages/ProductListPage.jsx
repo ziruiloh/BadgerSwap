@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -24,7 +25,7 @@ export default function ProductListPage({ navigation }) {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  // Fetch products on mount. Uses a mounted flag to avoid state updates after unmount.
+  // Fetch products on mount and when screen comes into focus. Uses a mounted flag to avoid state updates after unmount.
   useEffect(() => {
     let mounted = true;
     const fetchProducts = async () => {
@@ -42,10 +43,32 @@ export default function ProductListPage({ navigation }) {
     return () => (mounted = false);
   }, []);
 
+  // Refresh products when screen comes into focus (e.g., after creating a listing)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      const fetchProducts = async () => {
+        try {
+          const data = await getProducts();
+          setProducts(data || []);
+        } catch (error) {
+          console.error("Error fetching products:", error);
+        }
+      };
+      fetchProducts();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   // Derive unique category list from products (prefix with 'All').
   const categoriesList = useMemo(() => {
     const cats = products.map((p) => p.category).filter(Boolean);
-    return ["All", ...Array.from(new Set(cats))];
+    const uniqueCats = Array.from(new Set(cats));
+    // Ensure we have default categories even if no products exist
+    const defaultCategories = ['Textbooks', 'Clothing', 'Electronics', 'Furniture', 'Other'];
+    const allCategories = [...new Set([...uniqueCats, ...defaultCategories])];
+    const result = ["All", ...allCategories];
+    console.log('Categories list:', result);
+    return result;
   }, [products]);
 
   // Heuristic price formatter: handles numbers that may represent cents (large int) or dollars.
@@ -68,12 +91,16 @@ export default function ProductListPage({ navigation }) {
   // Filter products by selectedCategory & searchQuery.
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      // Filter by category (if "All" or null, show all)
       if (selectedCategory && selectedCategory !== "All" && p.category !== selectedCategory) return false;
+      // Filter by search query
       if (
         searchQuery &&
         !((p.title || "").toLowerCase().includes(searchQuery.toLowerCase()) || (p.description || "").toLowerCase().includes(searchQuery.toLowerCase()))
       )
         return false;
+      // Only show active listings (if status field exists)
+      if (p.status && p.status !== 'active') return false;
       return true;
     });
   }, [products, selectedCategory, searchQuery]);
@@ -136,20 +163,41 @@ export default function ProductListPage({ navigation }) {
           </TouchableOpacity>
         </View>
 
-  {/* Quick category chips (limited subset) for fast filtering */}
-  <View style={styles.categoryRowTop}>
+  {/* Scrollable category chips for filtering */}
+  <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRowTop}
+          style={styles.categoryScrollView}
+        >
           <TouchableOpacity
             style={[styles.categoryChip, !selectedCategory || selectedCategory === 'All' ? styles.categoryChipActive : null]}
-            onPress={() => setSelectedCategory(null)}
+            onPress={() => setSelectedCategory('All')}
           >
-            <Text style={[styles.categoryChipText, !selectedCategory || selectedCategory === 'All' ? styles.categoryChipTextActive : null]}>All</Text>
+            <Text 
+              style={[
+                styles.categoryChipText, 
+                (!selectedCategory || selectedCategory === 'All') ? styles.categoryChipTextActive : null
+              ]}
+            >
+              All
+            </Text>
           </TouchableOpacity>
-          {categoriesList.slice(1, 6).map((c) => (
-            <TouchableOpacity key={c} style={[styles.categoryChip, selectedCategory === c ? styles.categoryChipActive : null]} onPress={() => setSelectedCategory(selectedCategory === c ? null : c)}>
-              <Text style={[styles.categoryChipText, selectedCategory === c ? styles.categoryChipTextActive : null]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {categoriesList.slice(1).map((c) => {
+            const categoryName = c && String(c).trim() ? String(c) : 'Uncategorized';
+            return (
+              <TouchableOpacity 
+                key={categoryName} 
+                style={[styles.categoryChip, selectedCategory === c ? styles.categoryChipActive : null]} 
+                onPress={() => setSelectedCategory(selectedCategory === c ? 'All' : c)}
+              >
+                <Text style={[styles.categoryChipText, selectedCategory === c ? styles.categoryChipTextActive : null]}>
+                  {categoryName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
   <View style={styles.contentContainer}>
@@ -230,18 +278,26 @@ const styles = StyleSheet.create({
   filterIcon: {
     marginLeft: 8,
   },
+  categoryScrollView: {
+    maxHeight: 50,
+  },
   categoryRowTop: {
+    flexDirection: 'row',
+    paddingVertical: 10,
     flexDirection: 'row',
     marginTop: 10,
   },
   categoryChip: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     backgroundColor: 'white',
     marginRight: 8,
+    minHeight: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   categoryChipActive: {
     backgroundColor: '#000',
@@ -249,10 +305,13 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     color: '#333',
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   categoryChipTextActive: {
     color: '#fff',
+    fontWeight: '600',
   },
   contentContainer: {
     flex: 1,

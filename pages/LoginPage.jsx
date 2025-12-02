@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { logIn, signUp } from "../firebase/auth";
 
 export default function LoginPage({ navigation }) {
   const [email, setEmail] = useState("");
@@ -22,7 +23,7 @@ export default function LoginPage({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleEmailLogin = () => {
+  const handleEmailLogin = async () => {
     if (!email.trim()) {
       Alert.alert("Validation Error", "Please enter your email.");
       return;
@@ -31,24 +32,64 @@ export default function LoginPage({ navigation }) {
       Alert.alert("Validation Error", "Please enter your password.");
       return;
     }
+    if (!email.toLowerCase().endsWith("@wisc.edu")) {
+      Alert.alert("Error", "Only UW–Madison @wisc.edu emails can log in.");
+      return;
+    }
 
     setLoading(true);
-    // Simulate brief loading, then navigate
-    setTimeout(() => {
-      setLoading(false);
-      // Use the registered root stack screen name for the main app
+
+    try {
+      // Try logging in existing user
+      await logIn(email.trim(), password.trim());
       navigation.replace("MainApp");
-    }, 500);
+    } catch (err) {
+      let errorMessage = "An error occurred. Please try again.";
+      
+      // Handle specific Firebase auth errors
+      if (err.code === "auth/user-not-found") {
+        // User doesn't exist - offer to sign up
+        Alert.alert(
+          "Account Not Found",
+          "No account found with this email. Would you like to create one?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Sign Up",
+              onPress: async () => {
+                try {
+                  await signUp(email.trim(), password.trim(), email.split("@")[0]);
+                  Alert.alert("Account Created", "Welcome to BadgerSwap!");
+                  navigation.replace("MainApp");
+                } catch (signupError) {
+                  if (signupError.code === "auth/email-already-in-use") {
+                    Alert.alert("Error", "This email is already registered. Please try logging in again.");
+                  } else {
+                    Alert.alert("Signup Error", signupError.message || "Failed to create account.");
+                  }
+                }
+              }
+            }
+          ]
+        );
+      } else if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        errorMessage = "Incorrect password. Please try again.";
+        Alert.alert("Login Failed", errorMessage);
+      } else if (err.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address. Please check your email.";
+        Alert.alert("Invalid Email", errorMessage);
+      } else if (err.code === "auth/too-many-requests") {
+        errorMessage = "Too many failed login attempts. Please try again later.";
+        Alert.alert("Too Many Attempts", errorMessage);
+      } else {
+        errorMessage = err.message || "Failed to log in. Please try again.";
+        Alert.alert("Login Error", errorMessage);
+      }
+    }
+
+    setLoading(false);
   };
 
-  const handleGoogleSignIn = () => {
-    setLoading(true);
-    // Simulate brief loading, then navigate
-    setTimeout(() => {
-      setLoading(false);
-      navigation.replace("MainApp");
-    }, 500);
-  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -114,16 +155,6 @@ export default function LoginPage({ navigation }) {
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Log In</Text>}
             </TouchableOpacity>
 
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity style={styles.googleButton} onPress={handleGoogleSignIn} disabled={loading}>
-              <Ionicons name="checkbox" size={20} color="#000" />
-              <Text style={styles.googleButtonText}>Continue with Google (UW)</Text>
-            </TouchableOpacity>
 
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
