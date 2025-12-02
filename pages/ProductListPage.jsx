@@ -1,11 +1,13 @@
 // ProductListPage: Displays a searchable & filterable grid of products.
-// Fetches data once on mount via Firestore wrapper, then filters client-side.
+// Fetches data on mount and when screen comes into focus via Firestore wrapper.
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
   Modal,
+  RefreshControl,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -20,27 +22,39 @@ import { getProducts } from "../firebase/firestore";
 export default function ProductListPage({ navigation }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
-  // Fetch products on mount. Uses a mounted flag to avoid state updates after unmount.
-  useEffect(() => {
-    let mounted = true;
-    const fetchProducts = async () => {
-      try {
-        const data = await getProducts();
-        if (!mounted) return;
-        setProducts(data || []);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    fetchProducts();
-    return () => (mounted = false);
+  // Fetch products from Firestore
+  const fetchProducts = useCallback(async (showLoadingIndicator = true) => {
+    try {
+      if (showLoadingIndicator) setLoading(true);
+      const data = await getProducts();
+      setProducts(data || []);
+      console.log('Products fetched:', data?.length || 0);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  // Refetch products every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('ProductListPage focused - fetching products...');
+      fetchProducts();
+    }, [fetchProducts])
+  );
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchProducts(false);
+  }, [fetchProducts]);
 
   // Derive unique category list from products (prefix with 'All').
   const categoriesList = useMemo(() => {
@@ -170,6 +184,13 @@ export default function ProductListPage({ navigation }) {
             columnWrapperStyle={styles.row}
             contentContainerStyle={styles.productsList}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#000"
+              />
+            }
           />
         )}
       </View>

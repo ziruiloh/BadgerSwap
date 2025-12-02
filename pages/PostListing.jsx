@@ -14,7 +14,7 @@ import {
   View
 } from 'react-native';
 import { auth } from '../firebase/config';
-import { addProduct } from '../firebase/firestore';
+import { addProduct, getUser } from '../firebase/firestore';
 import { uploadListingImage } from '../firebase/storage';
 
 // PostListing: Form for creating a new product listing with image upload to Firebase Storage.
@@ -121,8 +121,21 @@ export default function PostListing({ navigation }) {
         setUploading(false);
       }
 
-      // Step 2: Create product object with image URL
+      // Step 2: Get seller info from Firestore (to get their name)
       const seller = auth.currentUser;
+      let sellerName = 'Unknown';
+      
+      if (seller) {
+        try {
+          const userProfile = await getUser(seller.uid);
+          sellerName = userProfile.name || seller.email;
+        } catch (error) {
+          console.log('Could not fetch user profile, using email:', error);
+          sellerName = seller.email;
+        }
+      }
+
+      // Step 3: Create product object with image URL
       const product = {
         title: title.trim(),
         description: description.trim(),
@@ -131,11 +144,11 @@ export default function PostListing({ navigation }) {
         location: location.trim(),
         image: imageUrl, // URL from Firebase Storage
         sellerId: seller ? seller.uid : null,
-        sellerName: seller ? seller.displayName || seller.email : 'Unknown',
+        sellerName: sellerName,
         createdAt: new Date().toISOString(),
       };
 
-      // Step 3: Save product to Firestore with the image URL
+      // Step 4: Save product to Firestore with the image URL
       const id = await addProduct(product);
       console.log('Listing created with ID:', id);
       
