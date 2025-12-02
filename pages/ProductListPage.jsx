@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 10,
-    paddingBottom: 6,
+    paddingBottom: 20,
     backgroundColor: 'white',
   },
   headerTitle: {
@@ -284,8 +284,7 @@ const styles = StyleSheet.create({
   categoryRowTop: {
     flexDirection: 'row',
     paddingVertical: 10,
-    flexDirection: 'row',
-    marginTop: 10,
+    paddingBottom: 12,
   },
   categoryChip: {
     paddingHorizontal: 16,
@@ -316,6 +315,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
   loadingContainer: {
     flex: 1,

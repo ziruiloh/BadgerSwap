@@ -24,6 +24,11 @@ export default function BottomTabs() {
         },
         tabBarActiveTintColor: "black",
         tabBarInactiveTintColor: "gray",
+        tabBarStyle: {
+          paddingBottom: 12,
+          paddingTop: 8,
+          height: 68,
+        },
       })}
     >
       <Tab.Screen name="Home" component={ProductListPage} />
