@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Profile images: anyone can read, authenticated users can upload
+    // Path format: profiles/{userId}_{timestamp}.jpg
+    // Since filename contains userId, we allow any authenticated user to write
+    // (The app logic ensures users only upload their own profile images)
+    match /profiles/{fileName} {
+      allow read: if true; // Anyone can read profile images
+      allow write: if request.auth != null; // Authenticated users can upload profile images
+    }
+    
+    // Listing images: anyone can read, authenticated users can upload
+    match /listings/{allPaths=**} {
+      allow read: if true; // Anyone can view listing images
+      allow write: if request.auth != null; // Authenticated users can upload listing images
+    }
+  }
+}
+
