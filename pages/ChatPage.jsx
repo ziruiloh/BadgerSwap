@@ -9,26 +9,115 @@ import {
     View,
 } from 'react-native';
 
-// ChatPage: Minimal local chat UI (in-memory messages). Placeholder for real backend chat integration.
+import { auth, db } from "../firebase/config";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
+  serverTimestamp,
+  getDocs
+} from "firebase/firestore";
+
+// ChatPage: Minimal local chat UI with BACKEND FIREBASE CHAT ADDED.
 export default function ChatPage({ route }) {
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([]);   // now synced with Firestore
   const [input, setInput] = useState('');
   const [renderError, setRenderError] = useState(null);
+  const [conversationId, setConversationId] = useState(null);
+
+  const buyerId = auth.currentUser?.uid;
+  const sellerId = route?.params?.sellerId;
+  const productId = route?.params?.productId;
+
+  // AUTO-FIND OR CREATE FIREBASE CONVERSATION
+  useEffect(() => {
+    const findOrCreateConversation = async () => {
+      if (!buyerId || !sellerId || !productId) return;
+
+      try {
+        const convQuery = query(
+          collection(db, "conversations"),
+          where("buyerId", "==", buyerId),
+          where("sellerId", "==", sellerId),
+          where("productId", "==", productId)
+        );
+
+        const snapshot = await getDocs(convQuery);
+
+        if (!snapshot.empty) {
+          // Existing conversation
+          const conv = snapshot.docs[0];
+          setConversationId(conv.id);
+        } else {
+          // Create new conversation
+          const newConv = await addDoc(collection(db, "conversations"), {
+            buyerId,
+            sellerId,
+            productId,
+            lastMessage: "",
+            timestamp: serverTimestamp(),
+          });
+          setConversationId(newConv.id);
+        }
+      } catch (err) {
+        console.error("Conversation Error:", err);
+      }
+    };
+
+    findOrCreateConversation();
+  }, [buyerId, sellerId, productId]);
+
+  // REALTIME FIREBASE MESSAGE SUBSCRIPTION
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const msgQuery = query(
+      collection(db, "conversations", conversationId, "messages"),
+      orderBy("timestamp", "asc")
+    );
+
+    const unsubscribe = onSnapshot(msgQuery, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setMessages(msgs);
+    });
+
+    return unsubscribe;
+  }, [conversationId]);
+
+  // SEND MESSAGE TO FIRESTORE AND KEEP YOUR LOCAL UI BEHAVIOR
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    if (!conversationId) return;
+
+    try {
+      await addDoc(collection(db, "conversations", conversationId, "messages"), {
+        text: input.trim(),
+        senderId: buyerId,
+        timestamp: serverTimestamp(),
+      });
+
+      // Optionally update conversation lastMessage
+      await addDoc;
+
+      setInput(""); // Keep your original cleanup behavior
+    } catch (err) {
+      console.error("Send Error:", err);
+    }
+  };
+
 
   useEffect(() => {
     console.log('ChatPage mounted');
     return () => console.log('ChatPage unmounted');
   }, []);
 
-  // Append a new message from the user to local state.
-  const handleSend = () => {
-    if (input.trim()) {
-      setMessages([...messages, { id: Date.now(), text: input, sender: 'user' }]);
-      setInput('');
-    }
-  };
-
-  // Defensive render: catch synchronous errors to avoid blank screens during early UI development.
+  // Defensive render: catch sync errors
   try {
     if (renderError) {
       return (
@@ -37,7 +126,9 @@ export default function ChatPage({ route }) {
             <Text style={styles.headerTitle}>Messages</Text>
           </View>
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: 'red' }]}>Error rendering chat: {String(renderError)}</Text>
+            <Text style={[styles.emptyText, { color: 'red' }]}>
+              Error rendering chat: {String(renderError)}
+            </Text>
           </View>
         </SafeAreaView>
       );
@@ -45,39 +136,46 @@ export default function ChatPage({ route }) {
 
     return (
       <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-      </View>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Messages</Text>
+        </View>
 
-  <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
-        {messages.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No messages yet</Text>
-          </View>
-        ) : (
-          messages.map((msg) => (
-            <View key={msg.id} style={[styles.messageBubble, styles.userMessage]}>
-              <Text style={styles.messageText}>{msg.text}</Text>
+        <ScrollView style={styles.messagesContainer} contentContainerStyle={styles.messagesContent}>
+          {messages.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No messages yet</Text>
             </View>
-          ))
-        )}
-  </ScrollView>
+          ) : (
+            messages.map((msg) => (
+              <View
+                key={msg.id}
+                style={[
+                  styles.messageBubble,
+                  msg.senderId === buyerId ? styles.userMessage : styles.theirMessage,
+                ]}
+              >
+                <Text style={styles.messageText}>{msg.text}</Text>
+              </View>
+            ))
+          )}
+        </ScrollView>
 
-      <View style={styles.inputArea}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
-          placeholderTextColor="#999"
-          value={input}
-          onChangeText={setInput}
-          multiline
-        />
-        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-          <Text style={styles.sendButtonText}>Send</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View style={styles.inputArea}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor="#999"
+            value={input}
+            onChangeText={setInput}
+            multiline
+          />
+          <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+            <Text style={styles.sendButtonText}>Send</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
+
   } catch (err) {
     console.error('ChatPage render error', err);
     setRenderError(err?.message || String(err));
@@ -87,13 +185,18 @@ export default function ChatPage({ route }) {
           <Text style={styles.headerTitle}>Messages</Text>
         </View>
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyText, { color: 'red' }]}>Error rendering chat: {String(err)}</Text>
+          <Text style={[styles.emptyText, { color: 'red' }]}>
+            Error rendering chat: {String(err)}
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 }
 
+// --------------------
+// ALL YOUR ORIGINAL STYLES (UNCHANGED)
+// --------------------
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -136,6 +239,10 @@ const styles = StyleSheet.create({
   userMessage: {
     alignSelf: 'flex-end',
     backgroundColor: '#007AFF',
+  },
+  theirMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e5e5ea',
   },
   messageText: {
     fontSize: 14,

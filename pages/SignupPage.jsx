@@ -1,18 +1,18 @@
+// pages/SignupPage.jsx
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { signUp } from "../firebase/auth";
 
@@ -20,59 +20,24 @@ export default function SignupPage({ navigation }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const validateName = (name) => {
-    if (!name || name.trim() === "") {
+  const handleSignup = async () => {
+    if (!name.trim()) {
       Alert.alert("Validation Error", "Please enter your name.");
-      return false;
+      return;
     }
-    return true;
-  };
-
-  const validateEmail = (email) => {
-    if (!email) {
-      Alert.alert("Validation Error", "Please enter your email address.");
-      return false;
+    if (!email.trim()) {
+      Alert.alert("Validation Error", "Please enter your email.");
+      return;
     }
-    if (!email.includes("@")) {
-      Alert.alert("Validation Error", "Please enter a valid email address.");
-      return false;
-    }
-    return true;
-  };
-
-  const validatePassword = (password) => {
-    if (!password) {
-      Alert.alert("Validation Error", "Please enter a password.");
-      return false;
-    }
-    if (password.length < 6) {
-      Alert.alert("Validation Error", "Password must be at least 6 characters long.");
-      return false;
-    }
-    return true;
-  };
-
-  const validateConfirmPassword = (password, confirmPassword) => {
-    if (password !== confirmPassword) {
-      Alert.alert("Validation Error", "Passwords do not match.");
-      return false;
-    }
-    return true;
-  };
-
-  const handleEmailSignup = async () => {
-    if (!validateName(name)) return;
-    if (!validateEmail(email)) return;
-    if (!validatePassword(password)) return;
-    if (!validateConfirmPassword(password, confirmPassword)) return;
-
     if (!email.toLowerCase().endsWith("@wisc.edu")) {
-      Alert.alert("Error", "Only UW–Madison @wisc.edu emails are allowed.");
+      Alert.alert("Error", "Only UW–Madison @wisc.edu emails can register.");
+      return;
+    }
+    if (!password.trim()) {
+      Alert.alert("Validation Error", "Please enter a password.");
       return;
     }
 
@@ -80,332 +45,154 @@ export default function SignupPage({ navigation }) {
 
     try {
       await signUp(email.trim(), password.trim(), name.trim());
-      Alert.alert("Success", "Account created successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.replace("MainApp"),
-        },
-      ]);
+
+      Alert.alert(
+        "Verification Email Sent",
+        `A verification email has been sent to ${email}. Please verify before logging in.`,
+        [
+          { text: "OK", onPress: () => navigation.navigate("LoginPage") }
+        ]
+      );
     } catch (err) {
-      let errorMessage = "Failed to create account. Please try again.";
-      
       if (err.code === "auth/email-already-in-use") {
-        errorMessage = "This email is already registered. Please log in instead.";
-      } else if (err.code === "auth/weak-password") {
-        errorMessage = "Password is too weak. Please choose a stronger password.";
-      } else if (err.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address. Please check your email.";
+        Alert.alert("Error", "This email is already registered.");
+      } else {
+        Alert.alert("Signup Error", err.message || "Failed to create account.");
       }
-      
-      Alert.alert("Signup Error", errorMessage);
     }
 
     setLoading(false);
   };
 
-
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
-        >
-        {/* Header with Back Button */}
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
 
-        {/* Logo Section */}
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="shield" size={50} color="#666" />
-          </View>
-          <Text style={styles.appTitle}>BadgerSwap</Text>
-          <Text style={styles.tagline}>Trusted marketplace for UW-Madison</Text>
-        </View>
-
-        {/* Signup Form */}
-        <View style={styles.formContainer}>
-          {/* Name Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Name</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                placeholderTextColor="#999"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-                autoComplete="name"
-              />
+          <View style={styles.logoContainer}>
+            <View style={styles.logoCircle}>
+              <Ionicons name="person-add-outline" size={50} color="#666" />
             </View>
+            <Text style={styles.appTitle}>Create Account</Text>
+            <Text style={styles.tagline}>Join the UW–Madison marketplace</Text>
           </View>
 
-          {/* Email Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="youremail@wisc.edu"
-                placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
-            </View>
-          </View>
+          <View style={styles.formContainer}>
 
-          {/* Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter password"
-                placeholderTextColor="#999"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete="password-new"
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showPassword ? "eye-outline" : "eye-off-outline"}
-                  size={20}
-                  color="#666"
+            {/* Name */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Your name"
+                  placeholderTextColor="#999"
+                  value={name}
+                  onChangeText={setName}
                 />
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {/* Confirm Password Input */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Re-enter password"
-                placeholderTextColor="#999"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoComplete="password-new"
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons
-                  name={showConfirmPassword ? "eye-outline" : "eye-off-outline"}
-                  size={20}
-                  color="#666"
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="youremail@wisc.edu"
+                  placeholderTextColor="#999"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
                 />
-              </TouchableOpacity>
+              </View>
             </View>
-          </View>
 
-          {/* Signup Button */}
-          <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
-            onPress={handleEmailSignup}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Sign Up</Text>
-            )}
-          </TouchableOpacity>
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter password"
+                  placeholderTextColor="#999"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
+                  <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-
-          {/* Sign In Link */}
-          <View style={styles.signinContainer}>
-            <Text style={styles.signinText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("LoginPage")}>
-              <Text style={styles.signinLink}>Log In</Text>
+            {/* Signup Button */}
+            <TouchableOpacity
+              style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+              onPress={handleSignup}
+              disabled={loading}
+            >
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Sign Up</Text>}
             </TouchableOpacity>
+
+            <View style={styles.signupContainer}>
+              <Text style={styles.signupText}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate("LoginPage")}>
+                <Text style={styles.signupLink}> Log In</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
-        </View>
-      </ScrollView>
+
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const { width, height } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 60,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 30,
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  logoContainer: { alignItems: "center", marginTop: 60, marginBottom: 40 },
   logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: "#F5F5F5",
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: "center", alignItems: "center",
     marginBottom: 16,
   },
-  logo: {
-    width: width > 400 ? 80 : 70,
-    height: width > 400 ? 80 : 70,
-    borderRadius: width > 400 ? 40 : 35,
-  },
-  appTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 8,
-  },
-  tagline: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-  },
-  formContainer: {
-    width: '100%',
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
-    marginBottom: 8,
-  },
+  appTitle: { fontSize: 28, fontWeight: "bold", marginBottom: 8 },
+  tagline: { fontSize: 14, color: "#666" },
+  formContainer: { width: "100%" },
+
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, marginBottom: 8, fontWeight: "500" },
   inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#FFF",
+    borderWidth: 1, borderColor: "#000",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#000",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    minHeight: 50,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: "#000",
-  },
-  eyeIcon: {
-    padding: 4,
-  },
+  inputIcon: { marginRight: 12 },
+  input: { flex: 1, fontSize: 16 },
+  eyeIcon: { padding: 4 },
+
   primaryButton: {
     backgroundColor: "#000",
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
     marginBottom: 24,
-    minHeight: 50,
   },
-  primaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: "#E0E0E0",
-  },
-  dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
-    color: "#999",
-  },
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#000",
-    paddingVertical: 16,
-    marginBottom: 24,
-    gap: 8,
-    minHeight: 50,
-  },
-  googleButtonText: {
-    color: "#000",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  signinContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 8,
-    flexWrap: "wrap",
-  },
-  signinText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  signinLink: {
-    fontSize: 14,
-    color: "#000",
-    fontWeight: "600",
-    textDecorationLine: "underline",
-  },
-});
+  primaryButtonDisabled: { opacity: 0.6 },
+  primaryButtonText: { color: "#FFF", fontSize: 16, fontWeight: "600" },
 
+  signupContainer: { flexDirection: "row", justifyContent: "center" },
+  signupText: { fontSize: 14, color: "#666" },
+  signupLink: { fontSize: 14, color: "#000", fontWeight: "600", textDecorationLine: "underline" }
+});

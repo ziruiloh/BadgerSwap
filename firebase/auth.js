@@ -13,6 +13,9 @@ export const signUp = async (email, password, name) => {
   const userCred = await createUserWithEmailAndPassword(auth, email, password);
   const user = userCred.user;
 
+  // Send verification email at signup
+  await user.sendEmailVerification();
+
   await setDoc(doc(db, "users", user.uid), {
     uid: user.uid,
     name,
@@ -28,5 +31,24 @@ export const logIn = async (email, password) => {
     throw new Error("Only UW–Madison accounts are allowed.");
   }
 
-  return signInWithEmailAndPassword(auth, email, password);
+  const userCred = await signInWithEmailAndPassword(auth, email, password);
+  const user = userCred.user;
+
+  // If email not verified -> block login
+  if (!user.emailVerified) {
+    await auth.signOut();
+    const error = new Error("Email not verified.");
+    error.code = "auth/email-not-verified";
+    throw error;
+  }
+
+  // ADDITION: Send another verification email every successful login
+  try {
+    await user.sendEmailVerification();
+  } catch (e) {
+    console.log("Failed to send login verification email:", e);
+  }
+
+  // RETURN ORIGINAL VALUE
+  return userCred;
 };
