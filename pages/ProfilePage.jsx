@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import {
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { auth } from '../firebase/config';
 import { getUser } from '../firebase/firestore';
@@ -56,10 +56,14 @@ export default function ProfilePage({ navigation }) {
     }
   };
 
-  // Sign out user from Firebase auth.
+  // Sign out user from Firebase auth and navigate to login page.
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      navigation.getParent()?.reset({
+        index: 0,
+        routes: [{ name: 'LoginPage' }],
+      });
     } catch (error) {
       Alert.alert('Error', 'Failed to logout');
     }
