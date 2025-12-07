@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { auth } from "../firebase/config"; // Needed for resend verification
 import { logIn, signUp } from "../firebase/auth";
 
 export default function LoginPage({ navigation }) {
@@ -40,15 +41,38 @@ export default function LoginPage({ navigation }) {
     setLoading(true);
 
     try {
-      // Try logging in existing user
-      await logIn(email.trim(), password.trim());
+      const loggedUser = await logIn(email.trim(), password.trim());
       navigation.replace("MainApp");
+
     } catch (err) {
       let errorMessage = "An error occurred. Please try again.";
-      
-      // Handle specific Firebase auth errors
+
+      // 1. EMAIL NOT VERIFIED
+      if (err.code === "auth/email-not-verified") {
+        Alert.alert(
+          "Email Not Verified",
+          "Please verify your email before logging in.",
+          [
+            { text: "OK", style: "cancel" },
+            {
+              text: "Resend Verification",
+              onPress: async () => {
+                try {
+                  await auth.currentUser.sendEmailVerification();
+                  Alert.alert("Verification Sent", "Please check your inbox.");
+                } catch (e) {
+                  Alert.alert("Error", "Failed to resend verification email.");
+                }
+              }
+            }
+          ]
+        );
+        setLoading(false);
+        return;
+      }
+
+      // 2.  USER NOT FOUND → OFFER SIGNUP
       if (err.code === "auth/user-not-found") {
-        // User doesn't exist - offer to sign up
         Alert.alert(
           "Account Not Found",
           "No account found with this email. Would you like to create one?",
@@ -59,37 +83,44 @@ export default function LoginPage({ navigation }) {
               onPress: async () => {
                 try {
                   await signUp(email.trim(), password.trim(), email.split("@")[0]);
-                  Alert.alert("Account Created", "Welcome to BadgerSwap!");
-                  navigation.replace("MainApp");
+                  Alert.alert(
+                    "Verification Email Sent",
+                    "Please verify your @wisc.edu email before logging in."
+                  );
                 } catch (signupError) {
-                  if (signupError.code === "auth/email-already-in-use") {
-                    Alert.alert("Error", "This email is already registered. Please try logging in again.");
-                  } else {
-                    Alert.alert("Signup Error", signupError.message || "Failed to create account.");
-                  }
+                  Alert.alert("Signup Error", signupError.message);
                 }
               }
             }
           ]
         );
-      } else if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
-        errorMessage = "Incorrect password. Please try again.";
-        Alert.alert("Login Failed", errorMessage);
-      } else if (err.code === "auth/invalid-email") {
-        errorMessage = "Invalid email address. Please check your email.";
-        Alert.alert("Invalid Email", errorMessage);
-      } else if (err.code === "auth/too-many-requests") {
-        errorMessage = "Too many failed login attempts. Please try again later.";
-        Alert.alert("Too Many Attempts", errorMessage);
-      } else {
-        errorMessage = err.message || "Failed to log in. Please try again.";
-        Alert.alert("Login Error", errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      // 3. WRONG PASSWORD
+      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        Alert.alert("Incorrect Password", "Please try again.");
+      }
+
+      // 4. INVALID EMAIL
+      else if (err.code === "auth/invalid-email") {
+        Alert.alert("Invalid Email", "Please check your email address.");
+      }
+
+      // 5. TOO MANY ATTEMPTS
+      else if (err.code === "auth/too-many-requests") {
+        Alert.alert("Too Many Attempts", "Please try again later.");
+      }
+
+      // 6. DEFAULT ERROR
+      else {
+        Alert.alert("Login Error", err.message || "Failed to log in.");
       }
     }
 
     setLoading(false);
   };
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,6 +141,7 @@ export default function LoginPage({ navigation }) {
 
           {/* Form */}
           <View style={styles.formContainer}>
+            {/* Email */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputContainer}>
@@ -118,15 +150,15 @@ export default function LoginPage({ navigation }) {
                   style={styles.input}
                   placeholder="youremail@wisc.edu"
                   placeholderTextColor="#999"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-              />
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
               </View>
             </View>
 
+            {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputContainer}>
@@ -139,7 +171,6 @@ export default function LoginPage({ navigation }) {
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
-                  autoComplete="password"
                 />
                 <TouchableOpacity onPress={() => setShowPassword((s) => !s)} style={styles.eyeIcon}>
                   <Ionicons name={showPassword ? "eye-outline" : "eye-off-outline"} size={20} color="#666" />
@@ -147,6 +178,7 @@ export default function LoginPage({ navigation }) {
               </View>
             </View>
 
+            {/* Login Button */}
             <TouchableOpacity
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
               onPress={handleEmailLogin}
@@ -155,7 +187,7 @@ export default function LoginPage({ navigation }) {
               {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>Log In</Text>}
             </TouchableOpacity>
 
-
+            {/* Signup Redirect */}
             <View style={styles.signupContainer}>
               <Text style={styles.signupText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate("SignupPage")}>
@@ -163,132 +195,52 @@ export default function LoginPage({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },
-  keyboardView: { flex: 1 },
-  scrollContent: { 
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  logoContainer: { 
-    alignItems: "center", 
-    marginTop: 60,
-    marginBottom: 40,
-  },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40 },
+  logoContainer: { alignItems: "center", marginTop: 60, marginBottom: 40 },
   logoCircle: {
-    width: 80, 
-    height: 80, 
-    borderRadius: 40, 
+    width: 80, height: 80, borderRadius: 40,
     backgroundColor: "#F5F5F5",
-    justifyContent: "center", 
-    alignItems: "center", 
+    justifyContent: "center", alignItems: "center",
     marginBottom: 16,
   },
-  appTitle: { 
-    fontSize: 28, 
-    fontWeight: "bold", 
-    color: "#000", 
-    marginBottom: 8 
-  },
-  tagline: { 
-    fontSize: 14, 
-    color: "#666",
-    textAlign: "center",
-  },
-  formContainer: { 
-    width: "100%",
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#000",
-    marginBottom: 8,
-  },
+  appTitle: { fontSize: 28, fontWeight: "bold" },
+  tagline: { fontSize: 14, color: "#666" },
+  formContainer: { width: "100%" },
+
+  inputGroup: { marginBottom: 20 },
+  label: { fontSize: 14, fontWeight: "500", marginBottom: 8 },
   inputContainer: {
-    flexDirection: "row", 
-    alignItems: "center",
-    backgroundColor: "#FFFFFF", 
+    flexDirection: "row", alignItems: "center",
+    borderWidth: 1, borderColor: "#000",
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#000",
-    paddingHorizontal: 16, 
-    paddingVertical: 12,
-    minHeight: 50,
+    paddingHorizontal: 16, paddingVertical: 12,
   },
   inputIcon: { marginRight: 12 },
-  input: { 
-    flex: 1, 
-    fontSize: 16, 
-    color: "#000" 
-  },
+  input: { flex: 1, fontSize: 16 },
   eyeIcon: { padding: 4 },
+
   primaryButton: {
-    backgroundColor: "#000", 
-    borderRadius: 8, 
-    paddingVertical: 16, 
+    backgroundColor: "#000",
+    borderRadius: 8,
+    paddingVertical: 16,
     alignItems: "center",
-    marginBottom: 24, 
-    minHeight: 50,
+    marginBottom: 24,
   },
   primaryButtonDisabled: { opacity: 0.6 },
-  primaryButtonText: { 
-    color: "#FFFFFF", 
-    fontSize: 16, 
-    fontWeight: "600" 
-  },
-  dividerContainer: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    marginBottom: 24,
-  },
-  dividerLine: { 
-    flex: 1, 
-    height: 1, 
-    backgroundColor: "#E0E0E0" 
-  },
-  dividerText: { 
-    marginHorizontal: 16, 
-    fontSize: 14, 
-    color: "#999" 
-  },
-  googleButton: {
-    flexDirection: "row", 
-    alignItems: "center", 
-    justifyContent: "center",
-    backgroundColor: "#FFFFFF", 
-    borderRadius: 8, 
-    borderWidth: 1, 
-    borderColor: "#000",
-    paddingVertical: 16, 
-    marginBottom: 24,
-    gap: 8,
-    minHeight: 50,
-  },
-  googleButtonText: { color: "#000", fontSize: 16, fontWeight: "500" },
-  signupContainer: { 
-    flexDirection: "row", 
-    justifyContent: "center", 
-    marginTop: 8,
-    flexWrap: "wrap",
-  },
+  primaryButtonText: { color: "#FFF", fontSize: 16, fontWeight: "600" },
+
+  signupContainer: { flexDirection: "row", justifyContent: "center" },
   signupText: { fontSize: 14, color: "#666" },
-  signupLink: { 
-    fontSize: 14, 
-    color: "#000", 
-    fontWeight: "600",
-    textDecorationLine: "underline",
-  },
+  signupLink: { fontSize: 14, color: "#000", fontWeight: "600", textDecorationLine: "underline" }
 });
