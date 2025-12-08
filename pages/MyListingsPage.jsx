@@ -27,6 +27,16 @@ export default function MyListingsPage({ navigation }) {
     }
   }, [currentUser]);
 
+  // Refresh listings when screen comes into focus (e.g., after editing/deleting)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (currentUser) {
+        loadMyListings();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, currentUser]);
+
   const loadMyListings = async () => {
     try {
       setLoading(true);
