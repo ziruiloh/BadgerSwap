@@ -4,7 +4,11 @@ service cloud.firestore {
     // Users collection: users can read/write their own data
     match /users/{userId} {
       allow read: if request.auth != null;
+      // Users can fully write to their own document
       allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow any authenticated user to update ONLY reputationScore (for report deductions)
+      allow update: if request.auth != null && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reputationScore']);
     }
     
     // Products collection: anyone can read, authenticated users can create/update/delete their own

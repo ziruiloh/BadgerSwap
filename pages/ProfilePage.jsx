@@ -99,15 +99,25 @@ export default function ProfilePage({ navigation }) {
               <View style={styles.stat}>
                 <Text style={styles.statLabel}>Reputation</Text>
                   <View style={styles.reputationStars}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Ionicons
-                        key={i}
-                        name={i < Math.round(user.reputation || 0) ? 'star' : 'star-outline'}
-                        size={18}
-                        color="#FFD700"
-                        style={{ marginRight: 4 }}
-                      />
-                    ))}
+                    {Array.from({ length: 5 }).map((_, i) => {
+                      const score = user.reputation || 0;
+                      // Determine star type: filled, half, or outline
+                      let starName = 'star-outline';
+                      if (i < Math.floor(score)) {
+                        starName = 'star';
+                      } else if (i < score && score - i >= 0.3) {
+                        starName = 'star-half';
+                      }
+                      return (
+                        <Ionicons
+                          key={i}
+                          name={starName}
+                          size={18}
+                          color="#FFD700"
+                          style={{ marginRight: 4 }}
+                        />
+                      );
+                    })}
                     <Text style={styles.statValue}> {user.reputation.toFixed(1)}</Text>
                   </View>
               </View>

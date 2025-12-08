@@ -67,7 +67,6 @@ export default function ProductListPage({ navigation }) {
     const defaultCategories = ['Textbooks', 'Clothing', 'Electronics', 'Furniture', 'Other'];
     const allCategories = [...new Set([...uniqueCats, ...defaultCategories])];
     const result = ["All", ...allCategories];
-    console.log('Categories list:', result);
     return result;
   }, [products]);
 
