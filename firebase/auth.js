@@ -1,6 +1,7 @@
 import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "./config";
@@ -15,7 +16,7 @@ export const signUp = async (email, password, name) => {
 
   // Send verification email at signup
   try {
-    await user.sendEmailVerification();
+    await sendEmailVerification(user);
   } catch (error) {
     console.error("Error sending verification email:", error);
   }
@@ -41,7 +42,7 @@ export const logIn = async (email, password) => {
   // If email not verified -> send verification email then sign out
   if (!user.emailVerified) {
     try {
-      await user.sendEmailVerification();
+      await sendEmailVerification(user);
     } catch (error) {
       console.error("Error sending verification email:", error);
     }
@@ -62,7 +63,7 @@ export const resendVerificationEmail = async () => {
   }
 
   try {
-    await user.sendEmailVerification();
+    await sendEmailVerification(user);
     return true;
   } catch (error) {
     console.error("Error resending verification email:", error);
