@@ -148,7 +148,7 @@ export default function ProductListPage({ navigation }) {
 
   <View style={styles.header}>
         <Text style={styles.headerTitle}>BadgerSwap</Text>
-  {/* Search input + filter icon opens modal category picker */}
+  {/* Search input */}
   <View style={styles.searchRow}>
           <Ionicons name="search-outline" size={18} color="#666" style={{ marginRight: 8 }} />
           <TextInput
@@ -158,9 +158,6 @@ export default function ProductListPage({ navigation }) {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-          <TouchableOpacity style={styles.filterIcon} onPress={() => setShowCategoryPicker(true)}>
-            <Ionicons name="options-outline" size={22} color="#000" />
-          </TouchableOpacity>
         </View>
 
   {/* Scrollable category chips for filtering */}
