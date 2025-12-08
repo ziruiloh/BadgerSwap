@@ -1,16 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
-    FlatList,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  FlatList,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { getOrCreateConversation, sendMessage, subscribeToMessages } from '../firebase/chat';
 import { auth, db } from '../firebase/config';
 
@@ -24,23 +25,54 @@ export default function ChatPage({ route, navigation }) {
 
   // Load all conversations for current user from Firebase in real-time
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId) {
+      setConversations([]);
+      return;
+    }
 
-    const convQuery = query(
+    // Load conversations where user is either buyerId or sellerId
+    const buyerQuery = query(
       collection(db, 'conversations'),
       where('buyerId', '==', currentUserId)
     );
 
-    const unsubscribe = onSnapshot(convQuery, (snapshot) => {
-      const convs = snapshot.docs.map(doc => ({
+    const sellerQuery = query(
+      collection(db, 'conversations'),
+      where('sellerId', '==', currentUserId)
+    );
+
+    const unsubscribeBuyer = onSnapshot(buyerQuery, (snapshot) => {
+      const buyerConvs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         timestamp: doc.data().timestamp?.toDate?.() || new Date(),
       }));
-      setConversations(convs);
+      setConversations(prev => {
+        const sellerConvs = prev.filter(c => c.sellerId === currentUserId);
+        return [...buyerConvs, ...sellerConvs];
+      });
+    }, (error) => {
+      console.error('Error loading buyer conversations:', error);
     });
 
-    return unsubscribe;
+    const unsubscribeSeller = onSnapshot(sellerQuery, (snapshot) => {
+      const sellerConvs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().timestamp?.toDate?.() || new Date(),
+      }));
+      setConversations(prev => {
+        const buyerConvs = prev.filter(c => c.buyerId === currentUserId);
+        return [...buyerConvs, ...sellerConvs];
+      });
+    }, (error) => {
+      console.error('Error loading seller conversations:', error);
+    });
+
+    return () => {
+      unsubscribeBuyer();
+      unsubscribeSeller();
+    };
   }, [currentUserId]);
 
   // Subscribe to messages for the active conversation
@@ -61,7 +93,7 @@ export default function ChatPage({ route, navigation }) {
   useEffect(() => {
     if (!route?.params?.sellerId || !route?.params?.productId) return;
     
-    const { sellerId, productId } = route.params;
+    const { sellerId, productId, sellerName, productTitle } = route.params;
     if (!currentUserId) return;
 
     const createOrOpenConv = async () => {
@@ -70,8 +102,8 @@ export default function ChatPage({ route, navigation }) {
           currentUserId,
           sellerId,
           productId,
-          '', // productTitle
-          ''  // sellerName
+          productTitle || '', // productTitle
+          sellerName || '' // sellerName
         );
         setActiveConversationId(conv.id);
       } catch (error) {
@@ -108,25 +140,50 @@ export default function ChatPage({ route, navigation }) {
     return msgDate.toLocaleDateString();
   };
 
-  const renderConversationItem = ({ item }) => (
+  const handleDeleteConversation = async (conversationId) => {
+    try {
+      await deleteDoc(doc(db, 'conversations', conversationId));
+      if (activeConversationId === conversationId) {
+        setActiveConversationId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+    }
+  };
+
+  const renderRightActions = (conversationId) => (
     <TouchableOpacity
-      style={[
-        styles.conversationItem,
-        activeConversationId === item.id && styles.conversationItemActive,
-      ]}
-      onPress={() => setActiveConversationId(item.id)}
+      style={styles.deleteAction}
+      onPress={() => handleDeleteConversation(conversationId)}
     >
-      <View style={styles.conversationAvatar}>
-        <Ionicons name="person" size={24} color="#666" />
-      </View>
-      <View style={styles.conversationContent}>
-        <Text style={styles.conversationTitle}>{item.sellerName || 'Unknown Seller'}</Text>
-        <Text style={styles.conversationPreview} numberOfLines={1}>
-          {item.lastMessage || 'No messages yet'}
-        </Text>
-      </View>
-      <Text style={styles.conversationTime}>{formatTime(item.timestamp)}</Text>
+      <Ionicons name="trash" size={24} color="#fff" />
     </TouchableOpacity>
+  );
+
+  const renderConversationItem = ({ item }) => (
+    <Swipeable
+      renderRightActions={() => renderRightActions(item.id)}
+      overshootRight={false}
+    >
+      <TouchableOpacity
+        style={[
+          styles.conversationItem,
+          activeConversationId === item.id && styles.conversationItemActive,
+        ]}
+        onPress={() => setActiveConversationId(item.id)}
+      >
+        <View style={styles.conversationAvatar}>
+          <Ionicons name="person" size={24} color="#666" />
+        </View>
+        <View style={styles.conversationContent}>
+          <Text style={styles.conversationTitle}>{item.sellerName || 'Unknown Seller'}</Text>
+          <Text style={styles.conversationPreview} numberOfLines={1}>
+            {item.lastMessage || 'No messages yet'}
+          </Text>
+        </View>
+        <Text style={styles.conversationTime}>{formatTime(item.timestamp)}</Text>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   const renderMessage = ({ item }) => {
@@ -406,5 +463,12 @@ const styles = StyleSheet.create({
   noMessagesText: {
     color: '#999',
     fontSize: 14,
+  },
+  deleteAction: {
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    paddingRight: 12,
   },
 });

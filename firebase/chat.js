@@ -1,17 +1,15 @@
-import { db } from "./config";
 import {
-  doc,
-  setDoc,
-  updateDoc,
-  getDoc,
-  collection,
   addDoc,
-  query,
-  where,
+  collection,
+  doc,
   onSnapshot,
   orderBy,
-  serverTimestamp
+  query,
+  serverTimestamp,
+  updateDoc,
+  where
 } from "firebase/firestore";
+import { db } from "./config";
 
 /**
  * Create or get existing conversation
@@ -93,6 +91,8 @@ export const subscribeToMessages = (conversationId, callback) => {
     }));
 
     callback(messages);
+  }, (error) => {
+    console.error('Error loading messages:', error);
   });
 };
 

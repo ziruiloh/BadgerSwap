@@ -271,7 +271,7 @@ export default function ListingDetails({ route, navigation }) {
                   // Navigate to MainApp (tabs) then to Chat tab
                   navigation.navigate('MainApp', { 
                     screen: 'Chat',
-                    params: { sellerId: product.sellerId, productId: product.id }
+                    params: { sellerId: product.sellerId, productId: product.id, sellerName, productTitle: product.name || product.title }
                   });
                 }}
               >
