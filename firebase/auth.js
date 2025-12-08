@@ -1,9 +1,9 @@
-import { auth, db } from "./config";
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "./config";
 
 export const signUp = async (email, password, name) => {
   if (!email.toLowerCase().endsWith("@wisc.edu")) {
@@ -38,8 +38,13 @@ export const logIn = async (email, password) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
   const user = userCred.user;
 
-  // If email not verified -> block login
+  // If email not verified -> send verification email then sign out
   if (!user.emailVerified) {
+    try {
+      await user.sendEmailVerification();
+    } catch (error) {
+      console.error("Error sending verification email:", error);
+    }
     await auth.signOut();
     const error = new Error("Email not verified.");
     error.code = "auth/email-not-verified";
