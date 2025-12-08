@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { logIn, signUp, resendVerificationEmail } from "../firebase/auth";
+import { logIn, resendVerificationEmail, signUp } from "../firebase/auth";
 
 export default function LoginPage({ navigation }) {
   const [email, setEmail] = useState("");

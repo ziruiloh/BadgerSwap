@@ -25,6 +25,7 @@ export const signUp = async (email, password, name) => {
     uid: user.uid,
     name,
     email,
+    bio: '',
     createdAt: serverTimestamp(),
   });
 
@@ -39,15 +40,12 @@ export const logIn = async (email, password) => {
   const userCred = await signInWithEmailAndPassword(auth, email, password);
   const user = userCred.user;
 
-  // If email not verified -> send verification email then sign out
+  // If email not verified -> sign out and throw error
+  // Don't auto-send verification email here to avoid rate limiting
+  // User can use resendVerificationEmail() if needed
   if (!user.emailVerified) {
-    try {
-      await sendEmailVerification(user);
-    } catch (error) {
-      console.error("Error sending verification email:", error);
-    }
     await auth.signOut();
-    const error = new Error("Email not verified.");
+    const error = new Error("Email not verified. Please check your inbox or request a new verification email.");
     error.code = "auth/email-not-verified";
     throw error;
   }
