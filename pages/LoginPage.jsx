@@ -15,8 +15,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { auth } from "../firebase/config"; // Needed for resend verification
-import { logIn, signUp } from "../firebase/auth";
+import { logIn, signUp, resendVerificationEmail } from "../firebase/auth";
 
 export default function LoginPage({ navigation }) {
   const [email, setEmail] = useState("");
@@ -58,7 +57,7 @@ export default function LoginPage({ navigation }) {
               text: "Resend Verification",
               onPress: async () => {
                 try {
-                  await auth.currentUser.sendEmailVerification();
+                  await resendVerificationEmail();
                   Alert.alert("Verification Sent", "Please check your inbox.");
                 } catch (e) {
                   Alert.alert("Error", "Failed to resend verification email.");

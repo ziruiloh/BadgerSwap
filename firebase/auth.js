@@ -14,7 +14,11 @@ export const signUp = async (email, password, name) => {
   const user = userCred.user;
 
   // Send verification email at signup
-  await user.sendEmailVerification();
+  try {
+    await user.sendEmailVerification();
+  } catch (error) {
+    console.error("Error sending verification email:", error);
+  }
 
   await setDoc(doc(db, "users", user.uid), {
     uid: user.uid,
@@ -42,13 +46,21 @@ export const logIn = async (email, password) => {
     throw error;
   }
 
-  // ADDITION: Send another verification email every successful login
-  try {
-    await user.sendEmailVerification();
-  } catch (e) {
-    console.log("Failed to send login verification email:", e);
+  return userCred;
+};
+
+// Resend verification email
+export const resendVerificationEmail = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("No user logged in.");
   }
 
-  // RETURN ORIGINAL VALUE
-  return userCred;
+  try {
+    await user.sendEmailVerification();
+    return true;
+  } catch (error) {
+    console.error("Error resending verification email:", error);
+    throw error;
+  }
 };
