@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { auth } from '../firebase/config';
 import { getUser } from '../firebase/firestore';
@@ -38,7 +38,7 @@ export default function ProfilePage({ navigation }) {
           name: userData.name || auth.currentUser.displayName || 'User',
           email: auth.currentUser.email,
           photo: userData.profileImage || userData.photoURL || auth.currentUser.photoURL || 'https://via.placeholder.com/150',
-          reputation: userData.reputation || 4.8,
+          reputation: userData.reputationScore ?? 5, // Default score is 5
           joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
           bio: userData.bio || '',
         });
@@ -48,7 +48,7 @@ export default function ProfilePage({ navigation }) {
           name: auth.currentUser.displayName || 'User',
           email: auth.currentUser.email,
           photo: auth.currentUser.photoURL || 'https://via.placeholder.com/150',
-          reputation: 4.8,
+          reputation: 5, // Default score for new users
           joinDate: auth.currentUser.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toLocaleDateString() : 'January 2023',
           bio: '',
         });
@@ -108,7 +108,7 @@ export default function ProfilePage({ navigation }) {
                         style={{ marginRight: 4 }}
                       />
                     ))}
-                    <Text style={styles.statValue}> {user.reputation}</Text>
+                    <Text style={styles.statValue}> {user.reputation.toFixed(1)}</Text>
                   </View>
               </View>
 
