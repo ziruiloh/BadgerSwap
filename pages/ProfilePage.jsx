@@ -207,6 +207,11 @@ const styles = StyleSheet.create({
   stat: {
     alignItems: 'center',
   },
+  reputationStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
   statLabel: {
     fontSize: 12,
     color: '#999',
