@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import { getOrCreateConversation, sendMessage, subscribeToMessages } from '../firebase/chat';
+import { getOrCreateConversation, markConversationAsRead, sendMessage, subscribeToMessages } from '../firebase/chat';
 import { auth, db } from '../firebase/config';
 
 // ChatPage: Real-time Firebase-synced chat with multi-conversation support
@@ -84,10 +84,17 @@ export default function ChatPage({ route, navigation }) {
         ...prev,
         [activeConversationId]: msgs,
       }));
+      
+      // Mark as read when messages load or update
+      if (currentUserId) {
+        markConversationAsRead(activeConversationId, currentUserId).catch(err => {
+          console.error('Error marking conversation as read:', err);
+        });
+      }
     });
 
     return unsubscribe;
-  }, [activeConversationId]);
+  }, [activeConversationId, currentUserId]);
 
   // Handle navigation to create new conversation
   useEffect(() => {
@@ -160,31 +167,43 @@ export default function ChatPage({ route, navigation }) {
     </TouchableOpacity>
   );
 
-  const renderConversationItem = ({ item }) => (
-    <Swipeable
-      renderRightActions={() => renderRightActions(item.id)}
-      overshootRight={false}
-    >
-      <TouchableOpacity
-        style={[
-          styles.conversationItem,
-          activeConversationId === item.id && styles.conversationItemActive,
-        ]}
-        onPress={() => setActiveConversationId(item.id)}
+  const renderConversationItem = ({ item }) => {
+    // Show the other person's name: if current user is seller, show buyer; if buyer, show seller
+    const otherPersonName = item.sellerId === currentUserId ? (item.buyerName || 'Buyer') : (item.sellerName || 'Unknown Seller');
+    const unreadCount = item.sellerId === currentUserId ? (item.unreadBySeller || 0) : (item.unreadByBuyer || 0);
+    const hasUnread = unreadCount > 0;
+    
+    return (
+      <Swipeable
+        renderRightActions={() => renderRightActions(item.id)}
+        overshootRight={false}
       >
-        <View style={styles.conversationAvatar}>
-          <Ionicons name="person" size={24} color="#666" />
-        </View>
-        <View style={styles.conversationContent}>
-          <Text style={styles.conversationTitle}>{item.sellerName || 'Unknown Seller'}</Text>
-          <Text style={styles.conversationPreview} numberOfLines={1}>
-            {item.lastMessage || 'No messages yet'}
-          </Text>
-        </View>
-        <Text style={styles.conversationTime}>{formatTime(item.timestamp)}</Text>
-      </TouchableOpacity>
-    </Swipeable>
-  );
+        <TouchableOpacity
+          style={[
+            styles.conversationItem,
+            activeConversationId === item.id && styles.conversationItemActive,
+          ]}
+          onPress={() => setActiveConversationId(item.id)}
+        >
+          <View style={styles.conversationAvatar}>
+            <Ionicons name="person" size={24} color="#666" />
+            {hasUnread && <View style={styles.unreadDot} />}
+          </View>
+          <View style={styles.conversationContent}>
+            <Text style={[styles.conversationTitle, hasUnread && styles.unreadTitle]} numberOfLines={1}>
+              {otherPersonName}
+            </Text>
+            <Text style={[styles.conversationPreview, hasUnread && styles.unreadPreview]} numberOfLines={1}>
+              {item.lastMessage || 'No messages yet'}
+            </Text>
+          </View>
+          <View style={styles.conversationTimeContainer}>
+            <Text style={styles.conversationTime}>{formatTime(item.timestamp)}</Text>
+          </View>
+        </TouchableOpacity>
+      </Swipeable>
+    );
+  };
 
   const renderMessage = ({ item }) => {
     const isMyMessage = item.senderId === currentUserId;
@@ -233,7 +252,9 @@ export default function ChatPage({ route, navigation }) {
         {activeConversation ? (
           <View style={styles.chatContainer}>
             <View style={styles.chatHeader}>
-              <Text style={styles.chatTitle}>{activeConversation.sellerName || 'Seller'}</Text>
+              <Text style={styles.chatTitle}>
+                {activeConversation.sellerId === currentUserId ? (activeConversation.buyerName || 'Buyer') : (activeConversation.sellerName || 'Seller')}
+              </Text>
               <Text style={styles.chatSubtitle}>{activeConversation.productTitle || 'Product'}</Text>
             </View>
 
@@ -335,6 +356,8 @@ const styles = StyleSheet.create({
   },
   conversationContent: {
     flex: 1,
+    marginRight: 8,
+    minWidth: 0,
   },
   conversationTitle: {
     fontSize: 14,
@@ -346,9 +369,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  conversationTimeContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    paddingLeft: 8,
+  },
   conversationTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#999',
+    alignSelf: 'flex-start',
+    marginTop: 2,
   },
   chatContainer: {
     flex: 1,
@@ -470,5 +500,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 80,
     paddingRight: 12,
+  },
+  unreadDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#f9f9f9',
+  },
+  unreadTitle: {
+    fontWeight: '700',
+    color: '#000',
+  },
+  unreadPreview: {
+    fontWeight: '600',
+    color: '#333',
   },
 });

@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -15,7 +14,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { logIn, resendVerificationEmail, signUp } from "../firebase/auth";
+import { logIn, resendVerificationEmail } from "../firebase/auth";
 
 export default function LoginPage({ navigation }) {
   const [email, setEmail] = useState("");
@@ -32,20 +31,13 @@ export default function LoginPage({ navigation }) {
       Alert.alert("Validation Error", "Please enter your password.");
       return;
     }
-    if (!email.toLowerCase().endsWith("@wisc.edu")) {
-      Alert.alert("Error", "Only UW–Madison @wisc.edu emails can log in.");
-      return;
-    }
 
     setLoading(true);
 
     try {
-      const loggedUser = await logIn(email.trim(), password.trim());
+      await logIn(email.trim(), password.trim());
       navigation.replace("MainApp");
-
     } catch (err) {
-      let errorMessage = "An error occurred. Please try again.";
-
       // 1. EMAIL NOT VERIFIED
       if (err.code === "auth/email-not-verified") {
         Alert.alert(
@@ -57,10 +49,10 @@ export default function LoginPage({ navigation }) {
               text: "Resend Verification",
               onPress: async () => {
                 try {
-                  await resendVerificationEmail();
+                  await resendVerificationEmail(email.trim(), password.trim());
                   Alert.alert("Verification Sent", "Please check your inbox.");
                 } catch (e) {
-                  Alert.alert("Error", "Failed to resend verification email.");
+                  Alert.alert("Error", e.message || "Failed to resend verification email.");
                 }
               }
             }
@@ -70,36 +62,21 @@ export default function LoginPage({ navigation }) {
         return;
       }
 
-      // 2.  USER NOT FOUND → OFFER SIGNUP
-      if (err.code === "auth/user-not-found") {
+      // 2. INVALID CREDENTIALS (wrong password OR user not found)
+      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
         Alert.alert(
-          "Account Not Found",
-          "No account found with this email. Would you like to create one?",
+          "Invalid Credentials",
+          "The email or password you entered is incorrect. If you don't have an account, please sign up.",
           [
-            { text: "Cancel", style: "cancel" },
+            { text: "Try Again", style: "cancel" },
             {
               text: "Sign Up",
-              onPress: async () => {
-                try {
-                  await signUp(email.trim(), password.trim(), email.split("@")[0]);
-                  Alert.alert(
-                    "Verification Email Sent",
-                    "Please verify your @wisc.edu email before logging in."
-                  );
-                } catch (signupError) {
-                  Alert.alert("Signup Error", signupError.message);
-                }
-              }
+              onPress: () => navigation.navigate("SignupPage")
             }
           ]
         );
         setLoading(false);
         return;
-      }
-
-      // 3. WRONG PASSWORD
-      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
-        Alert.alert("Incorrect Password", "Please try again.");
       }
 
       // 4. INVALID EMAIL
@@ -200,8 +177,6 @@ export default function LoginPage({ navigation }) {
     </SafeAreaView>
   );
 }
-
-const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFFFFF" },

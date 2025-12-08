@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -125,7 +125,7 @@ export default function EditProfile({ navigation }) {
       let imageUrl = profileImage;
 
       // If profileImage is a local URI (not a URL), upload it
-      if (profileImage && profileImage.startsWith('file://') || profileImage.startsWith('content://')) {
+      if (profileImage && (profileImage.startsWith('file://') || profileImage.startsWith('content://'))) {
         setUploading(true);
         imageUrl = await uploadProfileImage(profileImage, currentUser.uid);
         setUploading(false);

@@ -53,15 +53,13 @@ export const logIn = async (email, password) => {
   return userCred;
 };
 
-// Resend verification email
-export const resendVerificationEmail = async () => {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("No user logged in.");
-  }
-
+// Resend verification email - requires email/password since user is signed out after failed login
+export const resendVerificationEmail = async (email, password) => {
   try {
-    await sendEmailVerification(user);
+    // Sign in temporarily to send verification email
+    const userCred = await signInWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCred.user);
+    await auth.signOut();
     return true;
   } catch (error) {
     console.error("Error resending verification email:", error);
