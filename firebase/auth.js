@@ -26,6 +26,7 @@ export const signUp = async (email, password, name) => {
     name,
     email,
     bio: '',
+    reputationScore: 5, // Default reputation score for new users
     createdAt: serverTimestamp(),
   });
 

@@ -26,11 +26,16 @@ service cloud.firestore {
       }
     }
     
-    // Reports collection: authenticated users can create reports, only admins can read
+    // Reports collection: authenticated users can create and read their own reports
     match /reports/{reportId} {
-      allow create: if request.auth != null; // Any authenticated user can create reports
-      allow read: if false; // Only admins should read (you can add admin check later)
-      allow update, delete: if false; // No updates/deletes for now
+      // Any authenticated user can create reports
+      allow create: if request.auth != null;
+      // Users can read their own reports (by reporterId)
+      allow read: if request.auth != null && 
+        (resource.data.reporterId == request.auth.uid);
+      // Updates and deletes restricted (add admin check here if needed)
+      // Example admin check: request.auth.token.admin == true
+      allow update, delete: if false;
     }
   }
 }
