@@ -5,17 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   Image,
-  Modal,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getProducts } from "../firebase/firestore";
 
 export default function ProductListPage({ navigation }) {
@@ -23,7 +21,6 @@ export default function ProductListPage({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   // Fetch products on mount and when screen comes into focus. Uses a mounted flag to avoid state updates after unmount.
   useEffect(() => {
@@ -222,21 +219,6 @@ export default function ProductListPage({ navigation }) {
   <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('PostListing')}>
         <Ionicons name="add" size={24} color="white" />
       </TouchableOpacity>
-
-  {/* Modal for selecting any category, beyond quick chips */}
-  <Modal visible={showCategoryPicker} transparent animationType="fade">
-        <TouchableWithoutFeedback onPress={() => setShowCategoryPicker(false)}>
-          <View style={styles.modalOverlay} />
-        </TouchableWithoutFeedback>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Select category</Text>
-          {categoriesList.map((c) => (
-            <TouchableOpacity key={c} style={styles.modalRow} onPress={() => { setSelectedCategory(c === 'All' ? null : c); setShowCategoryPicker(false); }}>
-              <Text style={styles.modalRowText}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -270,9 +252,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: '#000',
-  },
-  filterIcon: {
-    marginLeft: 8,
   },
   categoryScrollView: {
     maxHeight: 50,
@@ -424,9 +403,4 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
-  modalContent: { position: 'absolute', left: 20, right: 20, top: '25%', backgroundColor: '#fff', borderRadius: 12, padding: 12 },
-  modalTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  modalRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  modalRowText: { fontSize: 14, color: '#333' },
 });

@@ -3,7 +3,6 @@ import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/f
 import { useEffect, useState } from 'react';
 import {
   FlatList,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getOrCreateConversation, markConversationAsRead, sendMessage, subscribeToMessages } from '../firebase/chat';
 import { auth, db } from '../firebase/config';
 

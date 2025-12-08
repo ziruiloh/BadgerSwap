@@ -7,7 +7,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../firebase/config';
 import { getUser, updateUser } from '../firebase/firestore';
 import { uploadProfileImage } from '../firebase/storage';
@@ -227,7 +227,7 @@ export default function EditProfile({ navigation }) {
               {loading || uploading ? (
                 <View style={styles.loadingRow}>
                   <ActivityIndicator color="#fff" />
-                  <Text style={styles.loadingText}>
+                  <Text style={styles.loadingButtonText}>
                     {uploading ? 'Uploading image...' : 'Saving...'}
                   </Text>
                 </View>
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  loadingText: {
+  loadingButtonText: {
     color: '#fff',
     fontWeight: '500',
   },

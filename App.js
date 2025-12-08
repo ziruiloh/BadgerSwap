@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { useEffect, useState } from "react";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { auth } from "./firebase/config";
 import ChatPage from "./pages/ChatPage";
@@ -81,26 +82,28 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName={user ? "MainApp" : "LoginPage"}
-        screenOptions={{ headerShown: false, cardStyle: { backgroundColor: "#FFFFFF" } }}
-      >
-        {/* Auth screens */}
-        <Stack.Screen name="LoginPage" component={LoginPage} />
-        <Stack.Screen name="SignupPage" component={SignupPage} />
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName={user ? "MainApp" : "LoginPage"}
+          screenOptions={{ headerShown: false, cardStyle: { backgroundColor: "#FFFFFF" } }}
+        >
+          {/* Auth screens */}
+          <Stack.Screen name="LoginPage" component={LoginPage} />
+          <Stack.Screen name="SignupPage" component={SignupPage} />
 
-        {/* Main authenticated container (tab navigator) */}
-        <Stack.Screen name="MainApp" component={HomeTabs} />
+          {/* Main authenticated container (tab navigator) */}
+          <Stack.Screen name="MainApp" component={HomeTabs} />
 
-        {/* Detail + creation flows layered on top of tabs */}
-        <Stack.Screen name="ListingDetails" component={ListingDetails} />
-        <Stack.Screen name="PostListing" component={PostListing} />
-        <Stack.Screen name="EditListing" component={EditListing} />
-        <Stack.Screen name="ReportPage" component={ReportPage} />
-        <Stack.Screen name="MyListingsPage" component={MyListingsPage} />
-        <Stack.Screen name="EditProfile" component={EditProfile} />
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* Detail + creation flows layered on top of tabs */}
+          <Stack.Screen name="ListingDetails" component={ListingDetails} />
+          <Stack.Screen name="PostListing" component={PostListing} />
+          <Stack.Screen name="EditListing" component={EditListing} />
+          <Stack.Screen name="ReportPage" component={ReportPage} />
+          <Stack.Screen name="MyListingsPage" component={MyListingsPage} />
+          <Stack.Screen name="EditProfile" component={EditProfile} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }

@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +14,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { getProduct, updateProduct, deleteProduct } from '../firebase/firestore';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { deleteProduct, getProduct, updateProduct } from '../firebase/firestore';
 import { uploadMultipleImages } from '../firebase/storage';
 
 export default function EditListing({ route, navigation }) {

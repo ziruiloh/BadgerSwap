@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import {
   Alert,
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from '../firebase/config';
 import { getUser } from '../firebase/firestore';
 

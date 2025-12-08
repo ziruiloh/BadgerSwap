@@ -4,16 +4,16 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform
+  View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { signUp } from "../firebase/auth";
 
 export default function SignupPage({ navigation }) {

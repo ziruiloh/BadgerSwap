@@ -39,13 +39,6 @@ export const deleteProduct = async (productId) => {
   await deleteDoc(docRef);
 };
 
-// Query products matching a specific category.
-export const getProductsByCategory = async (category) => {
-  const q = query(collection(db, "products"), where("category", "==", category));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
 // Query products created by a specific seller.
 export const getProductsBySeller = async (sellerId) => {
   const q = query(collection(db, "products"), where("sellerId", "==", sellerId));
@@ -53,28 +46,7 @@ export const getProductsBySeller = async (sellerId) => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-// Naive client-side search: Firestore lacks native full-text search.
-export const searchProducts = async (searchTerm) => {
-  const snapshot = await getDocs(collection(db, "products"));
-  const allProducts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-  // Note: Firestore doesn't support full-text search natively,
-  // so we filter client-side for basic search
-  const searchLower = searchTerm.toLowerCase();
-  return allProducts.filter(product => 
-    product.title?.toLowerCase().includes(searchLower) ||
-    product.description?.toLowerCase().includes(searchLower)
-  );
-};
-
 // ==================== USER CRUD OPERATIONS ====================
-
-// CREATE - Add a new user document (typically called during signup)
-export const createUser = async (userId, userData) => {
-  const docRef = doc(db, "users", userId);
-  await setDoc(docRef, userData);
-  return userId;
-};
 
 // READ - Get a single user by ID
 export const getUser = async (userId) => {
@@ -88,22 +60,10 @@ export const getUser = async (userId) => {
   }
 };
 
-// READ - Get all users (admin functionality)
-export const getAllUsers = async () => {
-  const snapshot = await getDocs(collection(db, "users"));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
 // UPDATE - Partially update user fields
 export const updateUser = async (userId, updates) => {
   const docRef = doc(db, "users", userId);
   await updateDoc(docRef, updates);
-};
-
-// DELETE - Delete a user document from Firestore
-export const deleteUser = async (userId) => {
-  const docRef = doc(db, "users", userId);
-  await deleteDoc(docRef);
 };
 
 // ==================== FAVORITES OPERATIONS ====================
@@ -224,84 +184,4 @@ export const createReport = async (reportData) => {
   }
 
   return docRef.id;
-};
-
-// READ - Get a single report by ID
-export const getReport = async (reportId) => {
-  const docRef = doc(db, "reports", reportId);
-  const docSnap = await getDoc(docRef);
-  
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() };
-  } else {
-    throw new Error("Report not found");
-  }
-};
-
-// READ - Get all reports (admin functionality)
-export const getAllReports = async () => {
-  const snapshot = await getDocs(collection(db, "reports"));
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// READ - Get reports by reporter ID
-export const getReportsByReporter = async (reporterId) => {
-  const q = query(collection(db, "reports"), where("reporterId", "==", reporterId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// READ - Get reports by target (listing or user being reported)
-export const getReportsByTarget = async (targetId) => {
-  const q = query(collection(db, "reports"), where("targetId", "==", targetId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// READ - Get reports by status (pending, reviewed, resolved, dismissed)
-export const getReportsByStatus = async (status) => {
-  const q = query(collection(db, "reports"), where("status", "==", status));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// READ - Get reports by type (listing or user)
-export const getReportsByType = async (targetType) => {
-  const q = query(collection(db, "reports"), where("targetType", "==", targetType));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
-
-// UPDATE - Partially update report fields
-export const updateReport = async (reportId, updates) => {
-  const docRef = doc(db, "reports", reportId);
-  await updateDoc(docRef, {
-    ...updates,
-    updatedAt: serverTimestamp(),
-  });
-};
-
-// UPDATE - Update report status (convenience method)
-export const updateReportStatus = async (reportId, status, adminNotes = null) => {
-  const updates = {
-    status,
-    updatedAt: serverTimestamp(),
-  };
-  
-  if (adminNotes !== null) {
-    updates.adminNotes = adminNotes;
-  }
-  
-  if (status === 'resolved' || status === 'dismissed') {
-    updates.resolvedAt = serverTimestamp();
-  }
-  
-  const docRef = doc(db, "reports", reportId);
-  await updateDoc(docRef, updates);
-};
-
-// DELETE - Delete a report document
-export const deleteReport = async (reportId) => {
-  const docRef = doc(db, "reports", reportId);
-  await deleteDoc(docRef);
 };
