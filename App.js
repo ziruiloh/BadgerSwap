@@ -50,9 +50,9 @@ function HomeTabs() {
           backgroundColor: "#FFFFFF",
           borderTopWidth: 1,
           borderTopColor: "#E5E5EA",
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: 15,
+          paddingTop: 8,
+          height: 75,
         },
       })}
     >

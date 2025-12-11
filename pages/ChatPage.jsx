@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
     FlatList,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -21,7 +24,29 @@ export default function ChatPage({ route, navigation }) {
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState({});
   const [input, setInput] = useState('');
+  const [userProfileImages, setUserProfileImages] = useState({}); // Store profile images by userId
   const currentUserId = auth.currentUser?.uid;
+
+  // Fetch profile images for users in conversations
+  const fetchUserProfileImage = async (userId) => {
+    if (!userId || userProfileImages[userId]) return; // Already fetched or no userId
+    
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const profileImage = userData.profileImage || userData.photoURL || null;
+        if (profileImage) {
+          setUserProfileImages(prev => ({
+            ...prev,
+            [userId]: profileImage
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user profile image:', error);
+    }
+  };
 
   // Load all conversations for current user from Firebase in real-time
   useEffect(() => {
@@ -49,7 +74,15 @@ export default function ChatPage({ route, navigation }) {
       }));
       setConversations(prev => {
         const sellerConvs = prev.filter(c => c.sellerId === currentUserId);
-        return [...buyerConvs, ...sellerConvs];
+        const allConvs = [...buyerConvs, ...sellerConvs];
+        // Fetch profile images for users in conversations
+        allConvs.forEach(conv => {
+          const otherUserId = conv.sellerId === currentUserId ? conv.buyerId : conv.sellerId;
+          if (otherUserId) {
+            fetchUserProfileImage(otherUserId);
+          }
+        });
+        return allConvs;
       });
     }, (error) => {
       console.error('Error loading buyer conversations:', error);
@@ -63,7 +96,15 @@ export default function ChatPage({ route, navigation }) {
       }));
       setConversations(prev => {
         const buyerConvs = prev.filter(c => c.buyerId === currentUserId);
-        return [...buyerConvs, ...sellerConvs];
+        const allConvs = [...buyerConvs, ...sellerConvs];
+        // Fetch profile images for users in conversations
+        allConvs.forEach(conv => {
+          const otherUserId = conv.sellerId === currentUserId ? conv.buyerId : conv.sellerId;
+          if (otherUserId) {
+            fetchUserProfileImage(otherUserId);
+          }
+        });
+        return allConvs;
       });
     }, (error) => {
       console.error('Error loading seller conversations:', error);
@@ -170,8 +211,10 @@ export default function ChatPage({ route, navigation }) {
   const renderConversationItem = ({ item }) => {
     // Show the other person's name: if current user is seller, show buyer; if buyer, show seller
     const otherPersonName = item.sellerId === currentUserId ? (item.buyerName || 'Buyer') : (item.sellerName || 'Unknown Seller');
+    const otherPersonId = item.sellerId === currentUserId ? item.buyerId : item.sellerId;
     const unreadCount = item.sellerId === currentUserId ? (item.unreadBySeller || 0) : (item.unreadByBuyer || 0);
     const hasUnread = unreadCount > 0;
+    const profileImage = otherPersonId ? userProfileImages[otherPersonId] : null;
     
     return (
       <Swipeable
@@ -186,7 +229,11 @@ export default function ChatPage({ route, navigation }) {
           onPress={() => setActiveConversationId(item.id)}
         >
           <View style={styles.conversationAvatar}>
-            <Ionicons name="person" size={24} color="#666" />
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+            ) : (
+              <Ionicons name="person" size={24} color="#666" />
+            )}
             {hasUnread && <View style={styles.unreadDot} />}
           </View>
           <View style={styles.conversationContent}>
@@ -230,8 +277,14 @@ export default function ChatPage({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
         <TouchableOpacity 
-          onPress={() => activeConversationId && setActiveConversationId(null)}
-          style={activeConversationId ? styles.backButton : styles.backButtonHidden}
+          onPress={() => {
+            if (activeConversationId) {
+              setActiveConversationId(null);
+            } else {
+              navigation.navigate('Home'); // Navigate to Home tab
+            }
+          }}
+          style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
@@ -241,46 +294,53 @@ export default function ChatPage({ route, navigation }) {
 
       {activeConversationId ? (
         // Active Chat View
-        <View style={styles.chatContainer}>
-          <View style={styles.chatHeader}>
-            <Text style={styles.chatTitle}>
-              {activeConversation.sellerId === currentUserId ? (activeConversation.buyerName || 'Buyer') : (activeConversation.sellerName || 'Seller')}
-            </Text>
-            <Text style={styles.chatSubtitle}>{activeConversation.productTitle || 'Product'}</Text>
-          </View>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }} 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <View style={styles.chatContainer}>
+            <View style={styles.chatHeader}>
+              <Text style={styles.chatTitle}>
+                {activeConversation.sellerId === currentUserId ? (activeConversation.buyerName || 'Buyer') : (activeConversation.sellerName || 'Seller')}
+              </Text>
+              <Text style={styles.chatSubtitle}>{activeConversation.productTitle || 'Product'}</Text>
+            </View>
 
-          <ScrollView
-            style={styles.messagesScroll}
-            contentContainerStyle={styles.messagesContent}
-          >
-            {activeMessages.length === 0 ? (
-              <View style={styles.noMessagesContainer}>
-                <Text style={styles.noMessagesText}>Start the conversation</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={activeMessages}
-                renderItem={renderMessage}
-                keyExtractor={(item) => item.id}
-                scrollEnabled={false}
+            <ScrollView
+              style={styles.messagesScroll}
+              contentContainerStyle={styles.messagesContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {activeMessages.length === 0 ? (
+                <View style={styles.noMessagesContainer}>
+                  <Text style={styles.noMessagesText}>Start the conversation</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={activeMessages}
+                  renderItem={renderMessage}
+                  keyExtractor={(item) => item.id}
+                  scrollEnabled={false}
+                />
+              )}
+            </ScrollView>
+
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Type a message..."
+                placeholderTextColor="#999"
+                value={input}
+                onChangeText={setInput}
+                multiline
               />
-            )}
-          </ScrollView>
-
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              placeholderTextColor="#999"
-              value={input}
-              onChangeText={setInput}
-              multiline
-            />
-            <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-              <Ionicons name="send" size={20} color="#fff" />
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+                <Ionicons name="send" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       ) : (
         // Conversations List View
         <View style={styles.conversationsListContainer}>
@@ -306,10 +366,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   headerTitle: {
     fontSize: 24,
@@ -355,6 +424,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   conversationContent: {
     flex: 1,
