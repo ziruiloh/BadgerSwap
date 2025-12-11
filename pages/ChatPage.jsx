@@ -75,14 +75,21 @@ export default function ChatPage({ route, navigation }) {
       setConversations(prev => {
         const sellerConvs = prev.filter(c => c.sellerId === currentUserId);
         const allConvs = [...buyerConvs, ...sellerConvs];
+        // Deduplicate by conversation ID
+        const uniqueConvs = allConvs.reduce((acc, conv) => {
+          if (!acc.find(c => c.id === conv.id)) {
+            acc.push(conv);
+          }
+          return acc;
+        }, []);
         // Fetch profile images for users in conversations
-        allConvs.forEach(conv => {
+        uniqueConvs.forEach(conv => {
           const otherUserId = conv.sellerId === currentUserId ? conv.buyerId : conv.sellerId;
           if (otherUserId) {
             fetchUserProfileImage(otherUserId);
           }
         });
-        return allConvs;
+        return uniqueConvs;
       });
     }, (error) => {
       console.error('Error loading buyer conversations:', error);
@@ -97,14 +104,21 @@ export default function ChatPage({ route, navigation }) {
       setConversations(prev => {
         const buyerConvs = prev.filter(c => c.buyerId === currentUserId);
         const allConvs = [...buyerConvs, ...sellerConvs];
+        // Deduplicate by conversation ID
+        const uniqueConvs = allConvs.reduce((acc, conv) => {
+          if (!acc.find(c => c.id === conv.id)) {
+            acc.push(conv);
+          }
+          return acc;
+        }, []);
         // Fetch profile images for users in conversations
-        allConvs.forEach(conv => {
+        uniqueConvs.forEach(conv => {
           const otherUserId = conv.sellerId === currentUserId ? conv.buyerId : conv.sellerId;
           if (otherUserId) {
             fetchUserProfileImage(otherUserId);
           }
         });
-        return allConvs;
+        return uniqueConvs;
       });
     }, (error) => {
       console.error('Error loading seller conversations:', error);
@@ -460,6 +474,9 @@ const styles = StyleSheet.create({
   chatContainer: {
     flex: 1,
     flexDirection: 'column',
+  },
+  conversationsListContainer: {
+    flex: 1,
   },
   chatHeader: {
     paddingHorizontal: 16,
