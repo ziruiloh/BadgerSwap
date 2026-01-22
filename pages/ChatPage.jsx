@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { collection, deleteDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import {
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    FlatList,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -229,17 +229,65 @@ export default function ChatPage({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerRow}>
+        <TouchableOpacity 
+          onPress={() => activeConversationId && setActiveConversationId(null)}
+          style={activeConversationId ? styles.backButton : styles.backButtonHidden}
+        >
+          <Ionicons name="chevron-back" size={28} color="#007AFF" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
+        <View style={{ width: 28 }} />
       </View>
 
-      <View style={styles.mainContent}>
-        {/* Conversations List */}
-        <View style={styles.conversationsContainer}>
+      {activeConversationId ? (
+        // Active Chat View
+        <View style={styles.chatContainer}>
+          <View style={styles.chatHeader}>
+            <Text style={styles.chatTitle}>
+              {activeConversation.sellerId === currentUserId ? (activeConversation.buyerName || 'Buyer') : (activeConversation.sellerName || 'Seller')}
+            </Text>
+            <Text style={styles.chatSubtitle}>{activeConversation.productTitle || 'Product'}</Text>
+          </View>
+
+          <ScrollView
+            style={styles.messagesScroll}
+            contentContainerStyle={styles.messagesContent}
+          >
+            {activeMessages.length === 0 ? (
+              <View style={styles.noMessagesContainer}>
+                <Text style={styles.noMessagesText}>Start the conversation</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={activeMessages}
+                renderItem={renderMessage}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+              />
+            )}
+          </ScrollView>
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              placeholderTextColor="#999"
+              value={input}
+              onChangeText={setInput}
+              multiline
+            />
+            <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+              <Ionicons name="send" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        // Conversations List View
+        <View style={styles.conversationsListContainer}>
           <FlatList
             data={conversations}
             renderItem={renderConversationItem}
             keyExtractor={(item) => item.id}
-            scrollEnabled={false}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No conversations yet</Text>
@@ -247,56 +295,7 @@ export default function ChatPage({ route, navigation }) {
             }
           />
         </View>
-
-        {/* Active Chat View */}
-        {activeConversation ? (
-          <View style={styles.chatContainer}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatTitle}>
-                {activeConversation.sellerId === currentUserId ? (activeConversation.buyerName || 'Buyer') : (activeConversation.sellerName || 'Seller')}
-              </Text>
-              <Text style={styles.chatSubtitle}>{activeConversation.productTitle || 'Product'}</Text>
-            </View>
-
-            <ScrollView
-              style={styles.messagesScroll}
-              contentContainerStyle={styles.messagesContent}
-            >
-              {activeMessages.length === 0 ? (
-                <View style={styles.noMessagesContainer}>
-                  <Text style={styles.noMessagesText}>Start the conversation</Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={activeMessages}
-                  renderItem={renderMessage}
-                  keyExtractor={(item) => item.id}
-                  scrollEnabled={false}
-                />
-              )}
-            </ScrollView>
-
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Type a message..."
-                placeholderTextColor="#999"
-                value={input}
-                onChangeText={setInput}
-                multiline
-              />
-              <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-                <Ionicons name="send" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.noConversationContainer}>
-            <Ionicons name="chatbubbles-outline" size={60} color="#ccc" />
-            <Text style={styles.noConversationText}>Select a conversation to start chatting</Text>
-          </View>
-        )}
-      </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -337,36 +336,39 @@ const styles = StyleSheet.create({
   },
   conversationItem: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e8e8e8',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   conversationItemActive: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#f0f7ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
   },
   conversationAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#e0e0e0',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   conversationContent: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
     minWidth: 0,
   },
   conversationTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   conversationPreview: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
   },
   conversationTimeContainer: {

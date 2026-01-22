@@ -66,10 +66,15 @@ export default function BottomTabs() {
         },
         tabBarActiveTintColor: "black",
         tabBarInactiveTintColor: "gray",
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginBottom: 4,
+        },
         tabBarStyle: {
-          paddingBottom: 12,
-          paddingTop: 8,
-          height: 68,
+          paddingBottom: 8,
+          paddingTop: 6,
+          height: 60,
         },
         tabBarBadge: route.name === "Chat" && totalUnread > 0 ? totalUnread : undefined,
         tabBarBadgeStyle: {
